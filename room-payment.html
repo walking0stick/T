@@ -727,7 +727,7 @@ async function initApp() {
   hideLoading();
   document.getElementById('mainApp').style.display = 'block';
   document.getElementById('bottomBar').style.display = 'flex';
-  renderAll();
+  renderAll(); // render อีกครั้งหลังแสดง UI
   startPolling();
 }
 
@@ -743,9 +743,11 @@ async function pullData() {
       if (!state.expenses) state.expenses = [];
       localStorage.setItem(LS_STATE_KEY, JSON.stringify(state));
       setSyncStatus('synced', 'อัปเดตแล้ว');
+      renderAll();
       return true;
     }
-    // ยังไม่มีข้อมูลใน Firebase (ใหม่)
+    // ยังไม่มีข้อมูลใน Firebase แสดงรายชื่อจาก default state
+    renderAll();
     setSyncStatus('synced', 'พร้อมใช้งาน');
     return true;
   } catch(e) {
@@ -782,8 +784,7 @@ async function pushData() {
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = setInterval(async () => {
-    const updated = await pullData();
-    if (updated) renderAll();
+    await pullData(); // renderAll ถูกเรียกใน pullData แล้ว
   }, POLL_INTERVAL);
 }
 
