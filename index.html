@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>เงินห้อง Real-time</title>
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
@@ -114,16 +113,64 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
 #loadingScreen p{color:var(--muted);font-size:0.88rem}
 .spinner{width:32px;height:32px;border:3px solid var(--surface2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* สไตล์เพิ่มเติมสำหรับ "หน้าแรกแจ้งโอนเงิน" แบบคลีนๆ */
+.p1-card { max-w:420px; margin:24px auto; padding:0 16px; }
+.btn-primary-custom { background:var(--accent); color:white; border:none; width:100%; padding:12px; border-radius:10px; font-family:'Sarabun',sans-serif; font-size:0.92rem; font-weight:600; cursor:pointer; text-align:center; box-shadow:0 4px 12px rgba(108,99,255,0.2); transition:all 0.2s; }
+.btn-primary-custom:hover { opacity:0.9; }
+.btn-secondary-custom { background:var(--surface); border:1px solid var(--border); color:var(--text); width:100%; padding:12px; border-radius:10px; font-family:'Sarabun',sans-serif; font-size:0.9rem; font-weight:500; cursor:pointer; text-align:center; transition:all 0.2s; margin-top:12px; }
+.btn-secondary-custom:hover { border-color:var(--accent); color:var(--accent); }
+.custom-select-p1 { width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); padding:11px 14px; border-radius:10px; font-family:'Sarabun',sans-serif; font-size:0.9rem; outline:none; margin-bottom:14px; }
+.custom-select-p1:focus { border-color:var(--accent); }
 </style>
 </head>
 <body>
 
 <div id="loadingScreen"><div class="spinner"></div><p>กำลังโหลดข้อมูล...</p></div>
 
+<div id="welcomePage" style="display:none" class="p1-card">
+  <div style="text-align:center; margin:32px 0 24px;">
+     <h1 style="font-size:1.4rem; font-weight:700; color:var(--accent)">💰 ระบบส่งสลิปเงินห้อง ม.6/9</h1>
+     <p style="font-size:0.8rem; color:var(--muted); margin-top:4px">สัปดาห์ละ 50 บาท • ปรับสาย 20 บาท</p>
+  </div>
+
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; text-align:center; margin-bottom:20px;">
+     <p style="font-size:0.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em">💰 ยอดเงินคงเหลือในห้องตอนนี้</p>
+     <div style="font-family:'IBM Plex Mono',monospace; font-size:2.2rem; font-weight:700; color:var(--green); margin-top:6px;" id="p1NetDisplay">฿0</div>
+  </div>
+
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:20px;">
+     <h3 style="font-size:0.92rem; margin-bottom:12px; color:var(--accent); font-weight:600">💸 แจ้งโอนเงินเข้าคลังห้อง</h3>
+     
+     <label style="display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px">1. เลือกชื่อ-นามสกุลของคุณ</label>
+     <select id="p1StudentSel" class="custom-select-p1">
+        </select>
+
+     <label style="display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px">2. อัปเดตรอบสัปดาห์ที่ต้องการจ่าย</label>
+     <select id="p1RoundSel" class="custom-select-p1" onchange="syncRoundSelects(this.value)">
+        </select>
+
+     <label style="display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px">3. แนบหลักฐานรูปภาพสลิป</label>
+     <div class="upload-zone" style="margin-bottom:14px;">
+        <input type="file" accept="image/*" onchange="previewSlipP1(event)" />
+        <div class="icon">📎</div>
+        <p id="p1UploadLabel">แตะเพื่ออัปโหลดไฟล์รูปภาพ</p>
+     </div>
+     <div class="slip-prev" id="p1SlipPrev" style="margin-bottom:14px;"><img id="p1SlipPrevImg" src="" style="width:100%; max-height:180px; object-fit:contain; border-radius:8px;" /></div>
+
+     <button class="btn-primary-custom" id="p1SubmitBtn" onclick="submitSlipP1()">ส่งหลักฐานสลิปเข้าเน็ต ✨</button>
+  </div>
+
+  <button class="btn-secondary-custom" onclick="navigateToPage(2)">📊 เข้าสู่ตารางบัญชีและรายชื่อทั้งหมด ➡️</button>
+</div>
+
+
 <div id="mainApp" style="display:none">
 <div class="header">
+  <button onclick="navigateToPage(1)" style="background:var(--surface3); border:1px solid var(--border); color:var(--text); padding:4px 10px; border-radius:6px; font-size:0.75rem; cursor:pointer; margin-bottom:10px; font-family:'Sarabun';">⬅️ กลับไปหน้าส่งสลิป</button>
+  
   <div class="header-row1">
-    <div><h1>💰 เงินห้อง Real-time</h1><div class="sub">50 บาท/สัปดาห์ • ปรับสาย 20 บาท</div></div>
+    <div><h1>💰 เงินห้อง Real-time (หน้ากระดานบัญชี)</h1><div class="sub">50 บาท/สัปดาห์ • ปรับสาย 20 บาท</div></div>
     <div class="sync-dot"><div class="dot" id="dot"></div><span id="syncLabel">เชื่อมต่อ...</span></div>
   </div>
   <div class="admin-bar">
@@ -194,7 +241,6 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
   </div>
 </div>
 
-<!-- MODAL: จ่ายเงิน -->
 <div class="overlay" id="payModal">
   <div class="modal">
     <button class="mclose" onclick="closeModal('payModal')">✕</button>
@@ -226,7 +272,6 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
   </div>
 </div>
 
-<!-- MODAL: ดูสลิป -->
 <div class="overlay" id="slipModal">
   <div class="modal" style="max-width:380px">
     <button class="mclose" onclick="closeModal('slipModal')">✕</button>
@@ -237,7 +282,6 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
   </div>
 </div>
 
-<!-- MODAL: เงินเก่า -->
 <div class="overlay" id="oldMoneyModal">
   <div class="modal" style="max-width:340px">
     <button class="mclose" onclick="closeModal('oldMoneyModal')">✕</button>
@@ -251,7 +295,6 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
   </div>
 </div>
 
-<!-- MODAL: ล็อกอินแอดมิน -->
 <div class="overlay" id="loginModal">
   <div class="modal" style="max-width:320px">
     <button class="mclose" onclick="closeModal('loginModal')">✕</button>
@@ -320,10 +363,12 @@ const MEMBERS = [
 let state = {rounds:[{id:'r1',name:'สัปดาห์ที่ 1',payments:{}}],currentRound:'r1',oldMoney:0,expenses:[]};
 let isAdmin = false, curFilter = 'all', curCode = null, slipData = null, isSaving = false;
 let db, dbRef;
+let p1SlipData = null; // ตัวแปรเก็บรูปสลิปของหน้าแรกฝั่งเพื่อน
 
 // ── FIREBASE INIT ──
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('expDate').value = today();
+  renderP1StaticSelects(); // เตรียมรายชื่อเพื่อนลงตัวเลือกของหน้าแรก
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.database();
@@ -339,32 +384,51 @@ window.addEventListener('DOMContentLoaded', () => {
         if (!state.rounds || state.rounds.length === 0) {
           state.rounds = [{id:'r1',name:'สัปดาห์ที่ 1',payments:{}}];
         }
-        // ตรวจสอบความถูกต้องของ currentRound
         if (!state.currentRound || !state.rounds.some(r=>r.id === state.currentRound)) {
           state.currentRound = state.rounds[0].id;
         }
       }
       document.getElementById('loadingScreen').style.display = 'none';
-      document.getElementById('mainApp').style.display = 'block';
-      document.getElementById('bottomBar').style.display = 'flex';
+      
+      // เริ่มต้นระบบ: ให้เปิดแสดงผลหน้าแรก (welcomePage) เสมอตามที่คุณตั้งใจ
+      navigateToPage(1);
+      
       setSyncStatus('synced','เชื่อมต่อแล้ว');
       renderAll();
     }, (error) => {
       console.error(error);
       setSyncStatus('error','เชื่อมต่อไม่ได้');
       document.getElementById('loadingScreen').style.display = 'none';
-      document.getElementById('mainApp').style.display = 'block';
-      document.getElementById('bottomBar').style.display = 'flex';
+      navigateToPage(1);
       renderAll();
     });
   } catch(e) {
     console.error(e);
     document.getElementById('loadingScreen').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'block';
-    document.getElementById('bottomBar').style.display = 'flex';
+    navigateToPage(1);
     renderAll();
   }
 });
+
+// ฟังก์ชันสลับเปลี่ยนหน้า (1 = หน้าแรกส่งสลิป, 2 = หน้าตารางบัญชีของคุณ)
+function navigateToPage(pageNum) {
+  if(pageNum === 1) {
+    document.getElementById('welcomePage').style.display = 'block';
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('bottomBar').style.display = 'none';
+  } else {
+    document.getElementById('welcomePage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('bottomBar').style.display = 'flex';
+  }
+}
+
+// ผูกรอบหน้าแรกให้เลื่อนตามหน้าสอง
+function syncRoundSelects(val) {
+  state.currentRound = val;
+  document.getElementById('roundSel').value = val;
+  renderAll();
+}
 
 async function pushData() {
   if (!dbRef || isSaving) return;
@@ -463,6 +527,7 @@ function deleteCurrentRound() {
 
 function switchRound() {
   state.currentRound = document.getElementById('roundSel').value;
+  document.getElementById('p1RoundSel').value = state.currentRound;
   renderAll();
 }
 
@@ -478,9 +543,19 @@ function renderAll() {
   renderExpenses();
 }
 
+function renderP1StaticSelects() {
+  const p1Sel = document.getElementById('p1StudentSel');
+  p1Sel.innerHTML = '<option value="">-- กรุณาเลือกชื่อของคุณ --</option>' + 
+    MEMBERS.map(m=>`<option value="${m.code}">${m.no}. ${m.name}</option>`).join('');
+}
+
 function renderRoundSel() {
   const sel = document.getElementById('roundSel');
   sel.innerHTML = state.rounds.map(r=>`<option value="${r.id}"${r.id===state.currentRound?' selected':''}>${r.name}</option>`).join('');
+  
+  // อัปเดตรอบในเซเลกเตอร์ของหน้าแรกให้ตรงกันตลอดเวลา
+  const p1Sel = document.getElementById('p1RoundSel');
+  p1Sel.innerHTML = state.rounds.map(r=>`<option value="${r.id}"${r.id===state.currentRound?' selected':''}>${r.name}</option>`).join('');
 }
 
 function renderStats() {
@@ -500,6 +575,10 @@ function renderStats() {
   }));
   const totalExp=(state.expenses||[]).reduce((s,e)=>s+Number(e.amount||0),0);
   const net=Number(state.oldMoney||0)+totalIncome-totalExp;
+  
+  // พ่นยอดเงินคงเหลือสุทธิไปแสดงผลที่ "การ์ดหน้าแรก"
+  document.getElementById('p1NetDisplay').textContent = `฿${net.toLocaleString()}`;
+
   document.getElementById('statsBar').innerHTML=`
     <div class="stat-card"><div class="stat-n c-accent">${paid+late}/${MEMBERS.length}</div><p>จ่ายแล้ว</p></div>
     <div class="stat-card"><div class="stat-n c-green">฿${totalIncome}</div><p>รายรับรวม</p></div>
@@ -568,34 +647,100 @@ function updateAmt() {
 
 function previewSlip(e) {
   const file=e.target.files[0];if(!file)return;
-  
-  // ตรวจสอบขนาดไฟล์เบื้องต้นเพื่อป้องกันฐานข้อมูลบวม (แนะนำไม่เกิน 1MB ก่อน Compress)
   if(file.size > 1.5 * 1024 * 1024) {
      showToast('⚠️ ภาพสลิปมีขนาดใหญ่เกินไป ลองแคปหน้าจอเพื่อลดขนาด', true);
      return;
   }
-  
   const reader=new FileReader();
   reader.onload=ev=>{
     const img = new Image();
     img.onload = () => {
-      // บีบอัดรูปภาพลง Canvas เบื้องต้นก่อนเก็บลงเซิร์ฟเวอร์
       const canvas = document.createElement('canvas');
       const MAX_WIDTH = 600;
       const scale = MAX_WIDTH / img.width;
       canvas.width = MAX_WIDTH;
       canvas.height = img.height * scale;
-      
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
-      slipData = canvas.toDataURL('image/jpeg', 0.65); // บีบอัดคุณภาพลง 65% บันทึกได้ปลอดภัยชัวร์
+      slipData = canvas.toDataURL('image/jpeg', 0.65);
       document.getElementById('slipPrevImg').src=slipData;
       document.getElementById('slipPrev').classList.add('show');
     };
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+// ── ฟังก์ชันฝั่งหน้าแรก (เพื่อนอัปสลิปแบบ Auto-save) ──
+function previewSlipP1(e) {
+  const file = e.target.files[0]; if(!file) return;
+  document.getElementById('p1UploadLabel').innerText = "เลือกไฟล์แล้ว: " + file.name;
+  
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 600;
+      const scale = MAX_WIDTH / img.width;
+      canvas.width = MAX_WIDTH;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      p1SlipData = canvas.toDataURL('image/jpeg', 0.65); // เข้ารหัสภาพสลิปหน้านี้ลดภาระเซิร์ฟเวอร์
+      document.getElementById('p1SlipPrevImg').src = p1SlipData;
+      document.getElementById('p1SlipPrev').classList.add('show');
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitSlipP1() {
+  const code = document.getElementById('p1StudentSel').value;
+  const targetRoundId = document.getElementById('p1RoundSel').value;
+  const submitBtn = document.getElementById('p1SubmitBtn');
+
+  if(!code) { alert('กรุณาเลือกชื่อของคุณก่อนส่งด้วยครับ!'); return; }
+  if(!p1SlipData) { alert('กรุณาแนบรูปภาพสลิปหลักฐานเพื่อตรวจสอบด้วยครับ!'); return; }
+
+  submitBtn.disabled = true;
+  submitBtn.innerText = 'กำลังส่งข้อมูลเข้าฐานข้อมูล... ⏳';
+
+  try {
+    // ดึงก้อนข้อมูลรอบเป้าหมายที่เพื่อนเลือก
+    const rd = state.rounds.find(r => r.id === targetRoundId);
+    if(!rd) throw new Error('ไม่พบรอบสัปดาห์');
+    if(!rd.payments) rd.payments = {};
+
+    // ตรวจสอบสถานะการจ่ายเงิน ณ วันปัจจุบัน (ถ้าสายปรับเงินอัตโนมัติได้)
+    // ตรงนี้บันทึกให้เป็นสิทธิแบบ "จ่ายแล้ว (paid)" อัตโนมัติ เพื่อให้ยอดบวกรวมทันทีตามที่เพื่อนจ่ายจริง
+    rd.payments[code] = {
+      status: 'paid',
+      date: today(),
+      slip: p1SlipData,
+      savedAt: new Date().toISOString()
+    };
+
+    renderAll(); // อัปเดตตารางและยอดเงินรวมแบบ Real-time ทั่วทั้งแอป
+    
+    // เคลียร์ค่าที่ฟอร์มหน้าแรก
+    document.getElementById('p1StudentSel').value = '';
+    document.getElementById('p1SlipPrev').classList.remove('show');
+    document.getElementById('p1UploadLabel').innerText = "แตะเพื่ออัปโหลดไฟล์รูปภาพ";
+    p1SlipData = null;
+
+    alert('✅ ส่งหลักฐานและบันทึกข้อมูลเงินห้องเข้าระบบเรียบร้อยแล้วครับ ขอบคุณครับ!');
+    navigateToPage(2); // ส่งเสร็จเด้งพามาดูตารางรายชื่อรวมเพื่อเช็กความถูกต้องได้เลย
+  } catch(e) {
+    console.error(e);
+    alert('เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerText = 'ส่งหลักฐานสลิปเข้าเน็ต ✨';
+    await pushData(); // ยิงคำสั่งเซฟลง Firebase Server ทันที
+  }
 }
 
 async function savePay() {
