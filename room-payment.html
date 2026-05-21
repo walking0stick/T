@@ -37,6 +37,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .round-row select,.round-row input[type="text"]{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-family:'Sarabun',sans-serif;font-size:0.85rem;outline:none}
 .round-row input[type="text"]{width:140px}
 .btn-add{background:var(--accent);color:white;border:none;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:0.82rem;font-weight:600}
+.btn-del-round{background:rgba(255,107,107,0.15);color:var(--red);border:1px solid rgba(255,107,107,0.3);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:0.82rem}
 .admin-only{display:none!important}
 body.is-admin .admin-only{display:inline-flex!important}
 body.is-admin .admin-only-block{display:block!important}
@@ -75,7 +76,7 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
 .btn-row{display:flex;gap:4px;flex-wrap:wrap}
 .exp-add-form{margin:14px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;display:none}
 .exp-add-form h3{font-size:0.88rem;color:var(--accent);margin-bottom:12px}
-.exp-form-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.exp-form-row {display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
 .exp-form-row input{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:0.85rem;outline:none}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center;padding:20px}
 .overlay.open{display:flex}
@@ -117,7 +118,7 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
 </head>
 <body>
 
-<div id="loadingScreen"><div class="spinner"></div><p>กำลังโหลด...</p></div>
+<div id="loadingScreen"><div class="spinner"></div><p>กำลังโหลดข้อมูล...</p></div>
 
 <div id="mainApp" style="display:none">
 <div class="header">
@@ -132,7 +133,8 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
   <div class="round-row">
     <label>รอบ:</label>
     <select id="roundSel" onchange="switchRound()"></select>
-    <span class="admin-only" style="display:none;gap:6px;align-items:center">
+    <button class="btn-del-round admin-only" style="display:none;" onclick="deleteCurrentRound()">🗑 ลบรอบนี้</button>
+    <span class="admin-only" style="display:none;gap:6px;align-items:center;margin-left:auto;">
       <input type="text" id="newRoundInp" placeholder="ชื่อรอบใหม่..." />
       <button class="btn-add" onclick="addRound()">+ เพิ่มรอบ</button>
     </span>
@@ -204,7 +206,7 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
       <select id="paySt" onchange="updateAmt()">
         <option value="paid">✅ จ่ายตรงเวลา — 50 บาท</option>
         <option value="late">⚠️ จ่ายสาย +ปรับ 20 บาท — รวม 70 บาท</option>
-        <option value="unpaid">❌ ล้างข้อมูล</option>
+        <option value="unpaid">❌ ล้างข้อมูล / ยังไม่จ่าย</option>
       </select>
     </div>
     <div class="fg"><label>วันที่จ่าย</label><input type="date" id="payDt" /></div>
@@ -329,12 +331,18 @@ window.addEventListener('DOMContentLoaded', () => {
 
     setSyncStatus('syncing','กำลังเชื่อมต่อ...');
 
-    // Real-time listener — อัปเดตทันทีเมื่อข้อมูลเปลี่ยน
     dbRef.on('value', (snapshot) => {
       const data = snapshot.val();
       if (data && data.rounds) {
         state = data;
         if (!state.expenses) state.expenses = [];
+        if (!state.rounds || state.rounds.length === 0) {
+          state.rounds = [{id:'r1',name:'สัปดาห์ที่ 1',payments:{}}];
+        }
+        // ตรวจสอบความถูกต้องของ currentRound
+        if (!state.currentRound || !state.rounds.some(r=>r.id === state.currentRound)) {
+          state.currentRound = state.rounds[0].id;
+        }
       }
       document.getElementById('loadingScreen').style.display = 'none';
       document.getElementById('mainApp').style.display = 'block';
@@ -362,16 +370,18 @@ async function pushData() {
   if (!dbRef || isSaving) return;
   isSaving = true;
   setSyncStatus('syncing','กำลังบันทึก...');
-  document.getElementById('saveBtn').disabled = true;
+  const saveBtn = document.getElementById('saveBtn');
+  if(saveBtn) saveBtn.disabled = true;
   try {
     await dbRef.set(state);
     setSyncStatus('synced','บันทึกแล้ว ✓');
   } catch(e) {
+    console.error(e);
     setSyncStatus('error','บันทึกไม่ได้');
     showToast('❌ บันทึกไม่สำเร็จ',true);
   }
   isSaving = false;
-  document.getElementById('saveBtn').disabled = false;
+  if(saveBtn) saveBtn.disabled = false;
 }
 
 function setSyncStatus(type,label) {
@@ -435,6 +445,22 @@ function addRound() {
   showToast('เพิ่มรอบ "'+name+'" แล้ว');
 }
 
+function deleteCurrentRound() {
+  if (!isAdmin) return;
+  if (state.rounds.length <= 1) {
+    showToast('⚠️ ไม่สามารถลบรอบสุดท้ายได้', true);
+    return;
+  }
+  const rd = curRound();
+  if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบรอบ "${rd.name}"?\n⚠️ ข้อมูลการจ่ายเงินทั้งหมดในรอบนี้จะหายไป!`)) {
+    state.rounds = state.rounds.filter(r => r.id !== state.currentRound);
+    state.currentRound = state.rounds[0].id;
+    pushData();
+    renderAll();
+    showToast('ลบรอบเสร็จสิ้น');
+  }
+}
+
 function switchRound() {
   state.currentRound = document.getElementById('roundSel').value;
   renderAll();
@@ -459,9 +485,10 @@ function renderRoundSel() {
 
 function renderStats() {
   const rd = curRound();
+  if(!rd) return;
   let paid=0,late=0,unpaid=0;
   MEMBERS.forEach(m=>{
-    const p=rd.payments[m.code];
+    const p=rd.payments ? rd.payments[m.code] : null;
     if(!p||p.status==='unpaid')unpaid++;
     else if(p.status==='paid')paid++;
     else late++;
@@ -479,7 +506,7 @@ function renderStats() {
     <div class="stat-card"><div class="stat-n c-red">฿${totalExp}</div><p>รายจ่ายรวม</p></div>
     <div class="stat-card"><div class="stat-n c-green">฿${net}</div><p>💰 คงเหลือ</p></div>
     <div class="stat-card"><div class="stat-n c-red">${unpaid}</div><p>ยังไม่จ่าย</p></div>`;
-  document.getElementById('barSummary').textContent=`${curRound().name} | จ่าย ${paid+late}/${MEMBERS.length} | คงเหลือ ฿${net}`;
+  document.getElementById('barSummary').textContent=`${rd.name} | จ่าย ${paid+late}/${MEMBERS.length} | คงเหลือ ฿${net}`;
 }
 
 function setFilter(f,btn) {
@@ -491,9 +518,10 @@ function setFilter(f,btn) {
 
 function renderTable() {
   const rd=curRound();
-  const search=document.getElementById('searchInp').value.toLowerCase();
+  if(!rd) return;
+  const search=document.getElementById('searchInp').value.toLowerCase().trim();
   let rows=MEMBERS.map(m=>{
-    const p=rd.payments[m.code];
+    const p=rd.payments ? rd.payments[m.code] : null;
     return{...m,pay:p,status:p?p.status:'unpaid'};
   }).filter(r=>{
     if(search&&!r.name.toLowerCase().includes(search)&&!r.code.includes(search))return false;
@@ -521,6 +549,7 @@ function openPayModal(code) {
   document.getElementById('paySt').value='paid';
   document.getElementById('amtDue').textContent='50 บาท';
   const rd=curRound();
+  if(!rd.payments) rd.payments = {};
   const ex=rd.payments[code];
   if(ex){
     document.getElementById('paySt').value=ex.status;
@@ -539,17 +568,47 @@ function updateAmt() {
 
 function previewSlip(e) {
   const file=e.target.files[0];if(!file)return;
+  
+  // ตรวจสอบขนาดไฟล์เบื้องต้นเพื่อป้องกันฐานข้อมูลบวม (แนะนำไม่เกิน 1MB ก่อน Compress)
+  if(file.size > 1.5 * 1024 * 1024) {
+     showToast('⚠️ ภาพสลิปมีขนาดใหญ่เกินไป ลองแคปหน้าจอเพื่อลดขนาด', true);
+     return;
+  }
+  
   const reader=new FileReader();
-  reader.onload=ev=>{slipData=ev.target.result;document.getElementById('slipPrevImg').src=slipData;document.getElementById('slipPrev').classList.add('show');};
+  reader.onload=ev=>{
+    const img = new Image();
+    img.onload = () => {
+      // บีบอัดรูปภาพลง Canvas เบื้องต้นก่อนเก็บลงเซิร์ฟเวอร์
+      const canvas = document.createElement('canvas');
+      const MAX_WIDTH = 600;
+      const scale = MAX_WIDTH / img.width;
+      canvas.width = MAX_WIDTH;
+      canvas.height = img.height * scale;
+      
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      
+      slipData = canvas.toDataURL('image/jpeg', 0.65); // บีบอัดคุณภาพลง 65% บันทึกได้ปลอดภัยชัวร์
+      document.getElementById('slipPrevImg').src=slipData;
+      document.getElementById('slipPrev').classList.add('show');
+    };
+    img.src = ev.target.result;
+  };
   reader.readAsDataURL(file);
 }
 
 async function savePay() {
   if(!curCode)return;
   const rd=curRound();
+  if(!rd.payments) rd.payments = {};
   const st=document.getElementById('paySt').value;
-  if(st==='unpaid'){delete rd.payments[curCode];}
-  else{rd.payments[curCode]={status:st,date:document.getElementById('payDt').value,slip:slipData||(rd.payments[curCode]?.slip)||null,savedAt:new Date().toISOString()};}
+  if(st==='unpaid'){
+    if(rd.payments[curCode]) delete rd.payments[curCode];
+  }
+  else{
+    rd.payments[curCode]={status:st,date:document.getElementById('payDt').value,slip:slipData||(rd.payments[curCode]?.slip)||null,savedAt:new Date().toISOString()};
+  }
   renderAll();
   closeModal('payModal');
   showToast('💾 กำลังบันทึก...');
@@ -560,7 +619,7 @@ async function savePay() {
 function viewSlip(code) {
   const m=MEMBERS.find(x=>x.code===code);
   const rd=curRound();
-  const p=rd.payments[code];
+  const p=rd.payments ? rd.payments[code] : null;
   if(!p?.slip)return;
   document.getElementById('slipName').textContent=m.name;
   document.getElementById('slipImg').src=p.slip;
@@ -576,7 +635,7 @@ async function addExpense() {
   const title=document.getElementById('expTitle').value.trim();
   const amt=Number(document.getElementById('expAmt').value);
   const dt=document.getElementById('expDate').value;
-  if(!title||!amt){showToast('⚠️ กรอกชื่อและจำนวนเงินด้วย',true);return;}
+  if(!title||!amt||isNaN(amt)){showToast('⚠️ กรอกชื่อและจำนวนเงินที่ถูกต้องด้วย',true);return;}
   if(!state.expenses)state.expenses=[];
   state.expenses.push({id:'e'+Date.now(),title,amount:amt,date:dt||today()});
   document.getElementById('expTitle').value='';
@@ -603,23 +662,33 @@ function renderExpenses() {
 
 function exportCSV() {
   const rd=curRound();
+  if(!rd) return;
   const rows=[['#','รหัส','ชื่อ','สถานะ','วันที่','ยอด','มีสลิป']];
-  MEMBERS.forEach(m=>{const p=rd.payments[m.code];rows.push([m.no,m.code,m.name,p?(p.status==='paid'?'จ่ายแล้ว':'จ่ายสาย'):'ยังไม่จ่าย',p?.date||'',p?(p.status==='late'?70:50):0,p?.slip?'มี':'ไม่มี']);});
-  dl(new Blob(['\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n')],{type:'text/csv'}),`เงินห้อง_${curRound().name}.csv`);
+  MEMBERS.forEach(m=>{
+    const p=rd.payments ? rd.payments[m.code] : null;
+    rows.push([m.no,m.code,m.name,p ? (p.status==='paid'?'จ่ายแล้ว':p.status==='late'?'จ่ายสาย':'ยังไม่จ่าย') :'ยังไม่จ่าย',p?.date||'',p?(p.status==='late'?70:p.status==='paid'?50:0):0,p?.slip?'มี':'ไม่มี']);
+  });
+  dl(new Blob(['\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n')],{type:'text/csv'}),`เงินห้อง_${rd.name}.csv`);
 }
 
 function exportTxt() {
   const rd=curRound();
+  if(!rd) return;
   let paid=[],late=[],unpaid=[];
-  MEMBERS.forEach(m=>{const p=rd.payments[m.code];if(!p||p.status==='unpaid')unpaid.push(m);else if(p.status==='paid')paid.push(m);else late.push(m);});
+  MEMBERS.forEach(m=>{
+    const p=rd.payments ? rd.payments[m.code] : null;
+    if(!p||p.status==='unpaid')unpaid.push(m);
+    else if(p.status==='paid')paid.push(m);
+    else late.push(m);
+  });
   let totalIncome=0;state.rounds.forEach(r=>Object.values(r.payments||{}).forEach(p=>{if(p.status==='paid')totalIncome+=50;if(p.status==='late')totalIncome+=70;}));
   const totalExp=(state.expenses||[]).reduce((s,e)=>s+Number(e.amount||0),0);
   const net=Number(state.oldMoney||0)+totalIncome-totalExp;
   let txt=`📊 สรุปเงินห้อง — ${rd.name}\n${'─'.repeat(40)}\n`;
-  txt+=`✅ จ่ายแล้ว (${paid.length} คน):\n`+paid.map(m=>`  • ${m.name}`).join('\n')+'\n\n';
-  txt+=`⚠️ จ่ายสาย (${late.length} คน):\n`+late.map(m=>`  • ${m.name}`).join('\n')+'\n\n';
-  txt+=`❌ ยังไม่จ่าย (${unpaid.length} คน):\n`+unpaid.map(m=>`  • ${m.name}`).join('\n')+'\n\n';
-  txt+=`${'─'.repeat(40)}\n💰 รายรับรวม: ฿${totalIncome}\n💸 รายจ่ายรวม: ฿${totalExp}\n✨ คงเหลือสุทธิ: ฿${net}\n`;
+  txt+=`✅ จ่ายแล้ว (${paid.length} คน):\n`+(paid.length ? paid.map(m=>`  • ${m.name}`).join('\n') : '  - ไม่มี -')+'\n\n';
+  txt+=`⚠️ จ่ายสาย (${late.length} คน):\n`+(late.length ? late.map(m=>`  • ${m.name}`).join('\n') : '  - ไม่มี -')+'\n\n';
+  txt+=`❌ ยังไม่จ่าย (${unpaid.length} คน):\n`+(unpaid.length ? unpaid.map(m=>`  • ${m.name}`).join('\n') : '  - ไม่มี -')+'\n\n';
+  txt+=`${'─'.repeat(40)}\n💰 รายรับรวมทุกรอบ: ฿${totalIncome}\n💸 รายจ่ายรวม: ฿${totalExp}\n✨ คงเหลือสุทธิ: ฿${net}\n`;
   dl(new Blob([txt],{type:'text/plain'}),`สรุปเงินห้อง_${rd.name}.txt`);
 }
 
