@@ -3,594 +3,220 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>เงินห้อง — Real-time</title>
+<title>เงินห้อง Real-time</title>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
-
 :root {
-  --bg: #0c0c10;
-  --surface: #16161f;
-  --surface2: #1e1e2a;
-  --surface3: #252534;
-  --border: #2a2a3d;
-  --accent: #6c63ff;
-  --accent-glow: rgba(108,99,255,0.2);
-  --green: #3dd68c;
-  --green-glow: rgba(61,214,140,0.15);
-  --red: #ff6b6b;
-  --yellow: #ffd166;
-  --blue: #4ecdc4;
-  --text: #e2e2f0;
-  --muted: #5a5a7a;
-  --muted2: #3a3a54;
+  --bg:#0c0c10;--surface:#16161f;--surface2:#1e1e2a;--surface3:#252534;
+  --border:#2a2a3d;--accent:#6c63ff;--green:#3dd68c;--red:#ff6b6b;
+  --yellow:#ffd166;--blue:#4ecdc4;--text:#e2e2f0;--muted:#5a5a7a;
 }
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: 'Sarabun', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  padding-bottom: 72px;
-}
-
-/* ── SETUP SCREEN ── */
-#setupScreen {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 24px;
-}
-.setup-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 36px;
-  max-width: 500px;
-  width: 100%;
-}
-.setup-card h1 { font-size: 1.4rem; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
-.setup-card .desc { font-size: 0.85rem; color: var(--muted); line-height: 1.7; margin-bottom: 24px; }
-
-.step-block {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 12px;
-}
-.step-num {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 24px; height: 24px; background: var(--accent);
-  border-radius: 50%; font-size: 0.75rem; font-weight: 700;
-  color: white; margin-right: 8px; flex-shrink: 0;
-}
-.step-title { font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; margin-bottom: 8px; }
-.step-body { font-size: 0.82rem; color: var(--muted); line-height: 1.7; padding-left: 32px; }
-.step-body code {
-  background: var(--surface3); border: 1px solid var(--border);
-  padding: 2px 7px; border-radius: 4px; font-family: 'IBM Plex Mono', monospace;
-  font-size: 0.8rem; color: var(--blue);
-}
-.copy-code {
-  background: var(--surface3); border: 1px solid var(--border);
-  border-radius: 8px; padding: 10px 14px; margin-top: 10px;
-  font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;
-  color: var(--green); word-break: break-all; cursor: pointer;
-  transition: border-color 0.2s; position: relative;
-}
-.copy-code:hover { border-color: var(--green); }
-.copy-code .copy-hint { font-family: 'Sarabun', sans-serif; font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
-
-.url-input-wrap { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.url-input {
-  flex: 1; background: var(--surface3); border: 1px solid var(--border);
-  color: var(--text); padding: 9px 12px; border-radius: 8px;
-  font-family: 'Sarabun', sans-serif; font-size: 0.85rem; outline: none; min-width: 0;
-  transition: border-color 0.2s;
-}
-.url-input:focus { border-color: var(--accent); }
-.btn-connect {
-  background: var(--accent); color: white; border: none;
-  padding: 9px 18px; border-radius: 8px; cursor: pointer;
-  font-family: 'Sarabun', sans-serif; font-size: 0.88rem; font-weight: 600;
-  transition: opacity 0.2s; white-space: nowrap;
-}
-.btn-connect:hover { opacity: 0.85; }
-.btn-connect:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.connect-error { color: var(--red); font-size: 0.82rem; margin-top: 8px; display: none; }
-
-/* ── HEADER ── */
-.header {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 20px;
-  position: sticky; top: 0; z-index: 100;
-}
-.header-row1 {
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 10px; margin-bottom: 10px;
-}
-.header h1 { font-size: 1.05rem; font-weight: 700; color: var(--accent); }
-.header .sub { font-size: 0.75rem; color: var(--muted); }
-
-/* Sync indicator */
-.sync-dot {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 0.75rem; color: var(--muted);
-}
-.dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--muted2); transition: background 0.4s;
-}
-.dot.syncing { background: var(--yellow); animation: pulse 1s infinite; }
-.dot.synced { background: var(--green); }
-.dot.error { background: var(--red); }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
-/* Admin bar */
-.admin-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; padding: 6px 12px; gap: 10px; flex-wrap: wrap;
-}
-.admin-badge {
-  font-size: 0.78rem; font-weight: 600;
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 3px 10px; border-radius: 20px;
-}
-.badge-admin { background: rgba(61,214,140,0.15); color: var(--green); }
-.badge-view { background: rgba(255,255,255,0.04); color: var(--muted); }
-.btn-login {
-  background: transparent; border: 1px solid var(--border); color: var(--muted);
-  padding: 4px 12px; border-radius: 6px; cursor: pointer;
-  font-family: 'Sarabun', sans-serif; font-size: 0.78rem; transition: all 0.2s;
-}
-.btn-login:hover { border-color: var(--accent); color: var(--accent); }
-
-/* Round selector */
-.round-row {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px;
-}
-.round-row label { font-size: 0.8rem; color: var(--muted); }
-.round-row select {
-  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-  padding: 6px 10px; border-radius: 7px; font-family: 'Sarabun', sans-serif;
-  font-size: 0.85rem; outline: none; transition: border-color 0.2s;
-}
-.round-row select:focus { border-color: var(--accent); }
-.round-row input[type="text"] {
-  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-  padding: 6px 10px; border-radius: 7px; font-family: 'Sarabun', sans-serif;
-  font-size: 0.85rem; outline: none; width: 140px; transition: border-color 0.2s;
-}
-.round-row input:focus { border-color: var(--accent); }
-.btn-add {
-  background: var(--accent); color: white; border: none;
-  padding: 6px 14px; border-radius: 7px; cursor: pointer;
-  font-family: 'Sarabun', sans-serif; font-size: 0.82rem; font-weight: 600;
-  transition: opacity 0.2s;
-}
-.btn-add:hover { opacity: 0.85; }
-.admin-only { display: none !important; }
-body.is-admin .admin-only { display: inline-flex !important; }
-body.is-admin .admin-only-block { display: block !important; }
-
-/* ── TABS ── */
-.tabs {
-  display: flex; gap: 0;
-  padding: 12px 20px 0; border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-.tab {
-  padding: 9px 18px; font-size: 0.88rem; font-weight: 600;
-  color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
-  transition: all 0.2s; white-space: nowrap;
-}
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-.section { display: none; }
-.section.active { display: block; }
-
-/* ── STATS ── */
-.stats {
-  display: flex; gap: 8px; padding: 14px 20px;
-  overflow-x: auto; scrollbar-width: none;
-}
-.stat-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; padding: 11px 16px;
-  flex: 1; min-width: 100px; text-align: center;
-  transition: border-color 0.2s;
-}
-.stat-card:hover { border-color: var(--muted2); }
-.stat-n {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 1.25rem; font-weight: 600; line-height: 1;
-}
-.stat-card p { font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
-.c-green { color: var(--green); }
-.c-red { color: var(--red); }
-.c-yellow { color: var(--yellow); }
-.c-blue { color: var(--blue); }
-.c-accent { color: var(--accent); }
-
-/* ── SEARCH ── */
-.search-area {
-  display: flex; gap: 8px; padding: 10px 20px 12px;
-  flex-wrap: wrap; align-items: center;
-}
-.search-area input {
-  background: var(--surface); border: 1px solid var(--border); color: var(--text);
-  padding: 8px 14px; border-radius: 8px; font-family: 'Sarabun', sans-serif;
-  font-size: 0.88rem; flex: 1; min-width: 160px; outline: none; transition: border-color 0.2s;
-}
-.search-area input:focus { border-color: var(--accent); }
-.filters { display: flex; gap: 5px; flex-wrap: wrap; }
-.fbtn {
-  background: var(--surface); border: 1px solid var(--border); color: var(--muted);
-  padding: 6px 12px; border-radius: 7px; font-family: 'Sarabun', sans-serif;
-  font-size: 0.78rem; cursor: pointer; transition: all 0.2s; white-space: nowrap;
-}
-.fbtn.active { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
-
-/* ── TABLE ── */
-.table-wrap { padding: 0 20px 16px; overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; min-width: 560px; }
-thead th {
-  background: var(--surface2); padding: 10px 12px; text-align: left;
-  font-size: 0.72rem; color: var(--muted); font-weight: 600;
-  letter-spacing: 0.06em; text-transform: uppercase;
-  border-bottom: 1px solid var(--border); white-space: nowrap;
-}
-tbody tr { border-bottom: 1px solid rgba(42,42,61,0.6); transition: background 0.12s; }
-tbody tr:hover { background: rgba(255,255,255,0.018); }
-tbody td { padding: 10px 12px; font-size: 0.86rem; vertical-align: middle; }
-
-.mono { font-family: 'IBM Plex Mono', monospace; }
-.num-col { font-size: 0.76rem; color: var(--muted); }
-
-.badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 9px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; white-space: nowrap;
-}
-.b-paid { background: rgba(61,214,140,0.1); color: var(--green); border: 1px solid rgba(61,214,140,0.22); }
-.b-late { background: rgba(255,209,102,0.1); color: var(--yellow); border: 1px solid rgba(255,209,102,0.22); }
-.b-unpaid { background: rgba(255,107,107,0.1); color: var(--red); border: 1px solid rgba(255,107,107,0.22); }
-
-.fine-pill {
-  background: rgba(255,209,102,0.12); color: var(--yellow);
-  font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; margin-left: 3px; font-weight: 600;
-}
-
-.abtn {
-  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-  padding: 4px 10px; border-radius: 6px; font-family: 'Sarabun', sans-serif;
-  font-size: 0.77rem; cursor: pointer; transition: all 0.18s; white-space: nowrap;
-}
-.abtn:hover { border-color: var(--accent); color: var(--accent); }
-.abtn.slip { color: var(--blue); border-color: rgba(78,205,196,0.3); }
-.abtn.slip:hover { background: rgba(78,205,196,0.08); }
-.abtn.record:hover { border-color: var(--green); color: var(--green); }
-.btn-row { display: flex; gap: 4px; flex-wrap: wrap; }
-
-/* ── EXPENSES SECTION ── */
-.exp-add-form {
-  margin: 14px 20px; background: var(--surface); border: 1px solid var(--border);
-  border-radius: 12px; padding: 16px; display: none;
-}
-.exp-add-form h3 { font-size: 0.88rem; color: var(--accent); margin-bottom: 12px; }
-.exp-form-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
-.exp-form-row input, .exp-form-row select {
-  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-  padding: 8px 10px; border-radius: 8px; font-family: 'Sarabun', sans-serif;
-  font-size: 0.85rem; outline: none; transition: border-color 0.2s;
-}
-.exp-form-row input:focus { border-color: var(--accent); }
-
-/* ── MODALS ── */
-.overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.8); backdrop-filter: blur(6px);
-  z-index: 1000; align-items: center; justify-content: center; padding: 20px;
-}
-.overlay.open { display: flex; }
-.modal {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 16px; padding: 24px; max-width: 460px; width: 100%;
-  position: relative; max-height: 90vh; overflow-y: auto;
-}
-.modal h2 { font-size: 1rem; font-weight: 700; margin-bottom: 3px; }
-.modal .sub { font-size: 0.8rem; color: var(--muted); margin-bottom: 18px; }
-.mclose {
-  position: absolute; top: 14px; right: 14px;
-  background: var(--surface2); border: 1px solid var(--border);
-  color: var(--muted); width: 28px; height: 28px; border-radius: 50%;
-  cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
-  transition: all 0.18s;
-}
-.mclose:hover { color: var(--text); }
-
-.fg { margin-bottom: 14px; }
-.fg label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 5px; }
-.fg input, .fg select {
-  width: 100%; background: var(--surface2); border: 1px solid var(--border);
-  color: var(--text); padding: 9px 12px; border-radius: 8px;
-  font-family: 'Sarabun', sans-serif; font-size: 0.88rem; outline: none; transition: border-color 0.2s;
-}
-.fg input:focus, .fg select:focus { border-color: var(--accent); }
-
-.amt-box {
-  background: var(--surface2); border-radius: 10px; padding: 12px 16px;
-  margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;
-}
-.amt-box .lbl { font-size: 0.8rem; color: var(--muted); }
-.amt-box .val { font-family: 'IBM Plex Mono', monospace; font-size: 1.05rem; font-weight: 600; color: var(--green); }
-
-.upload-zone {
-  border: 2px dashed var(--border); border-radius: 10px; padding: 20px;
-  text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
-}
-.upload-zone:hover { border-color: var(--accent); background: var(--accent-glow); }
-.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.upload-zone .icon { font-size: 1.8rem; margin-bottom: 6px; }
-.upload-zone p { font-size: 0.82rem; color: var(--muted); }
-
-.slip-prev { margin-top: 10px; border-radius: 8px; overflow: hidden; display: none; }
-.slip-prev img { width: 100%; max-height: 180px; object-fit: contain; background: var(--surface2); }
-.slip-prev.show { display: block; }
-
-.mactions { display: flex; gap: 8px; margin-top: 18px; }
-.btn-p {
-  flex: 1; background: var(--accent); color: white; border: none;
-  padding: 10px; border-radius: 8px; font-family: 'Sarabun', sans-serif;
-  font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
-}
-.btn-p:hover { opacity: 0.85; }
-.btn-p:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-s {
-  background: var(--surface2); color: var(--text); border: 1px solid var(--border);
-  padding: 10px 18px; border-radius: 8px; font-family: 'Sarabun', sans-serif;
-  font-size: 0.88rem; cursor: pointer; transition: all 0.2s;
-}
-.btn-s:hover { border-color: var(--muted); }
-
-/* ── BOTTOM BAR ── */
-.bottom-bar {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  background: var(--surface); border-top: 1px solid var(--border);
-  padding: 10px 20px; display: flex; align-items: center;
-  justify-content: space-between; gap: 8px; flex-wrap: wrap; z-index: 90;
-}
-.bottom-bar p { font-size: 0.78rem; color: var(--muted); }
-.expbtn {
-  background: var(--surface2); border: 1px solid var(--border); color: var(--text);
-  padding: 6px 14px; border-radius: 7px; font-family: 'Sarabun', sans-serif;
-  font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
-}
-.expbtn:hover { border-color: var(--green); color: var(--green); }
-
-/* ── TOAST ── */
-.toast {
-  position: fixed; bottom: 62px; left: 50%; transform: translateX(-50%);
-  padding: 9px 18px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
-  z-index: 9999; opacity: 0; transition: opacity 0.25s; pointer-events: none;
-  white-space: nowrap; background: var(--green); color: #0c0c10;
-}
-.toast.err { background: var(--red); color: white; }
-.toast.show { opacity: 1; }
-
-/* ── LOADING OVERLAY ── */
-#loadingScreen {
-  position: fixed; inset: 0; background: var(--bg);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  z-index: 9998; gap: 14px;
-}
-#loadingScreen p { color: var(--muted); font-size: 0.88rem; }
-.spinner {
-  width: 32px; height: 32px; border: 3px solid var(--surface2);
-  border-top-color: var(--accent); border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-@media (max-width: 600px) {
-  .stats { padding: 10px 14px; }
-  .search-area, .table-wrap { padding-left: 14px; padding-right: 14px; }
-  .header { padding: 12px 14px; }
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:72px}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;position:sticky;top:0;z-index:100}
+.header-row1{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.header h1{font-size:1.05rem;font-weight:700;color:var(--accent)}
+.header .sub{font-size:0.75rem;color:var(--muted)}
+.sync-dot{display:inline-flex;align-items:center;gap:5px;font-size:0.75rem;color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background 0.4s}
+.dot.syncing{background:var(--yellow);animation:pulse 1s infinite}
+.dot.synced{background:var(--green)}
+.dot.error{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.admin-bar{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;gap:10px;flex-wrap:wrap}
+.admin-badge{font-size:0.78rem;font-weight:600;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px}
+.badge-admin{background:rgba(61,214,140,0.15);color:var(--green)}
+.badge-view{background:rgba(255,255,255,0.04);color:var(--muted)}
+.btn-login{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:6px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:0.78rem;transition:all 0.2s}
+.btn-login:hover{border-color:var(--accent);color:var(--accent)}
+.round-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.round-row label{font-size:0.8rem;color:var(--muted)}
+.round-row select,.round-row input[type="text"]{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-family:'Sarabun',sans-serif;font-size:0.85rem;outline:none}
+.round-row input[type="text"]{width:140px}
+.btn-add{background:var(--accent);color:white;border:none;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:0.82rem;font-weight:600}
+.admin-only{display:none!important}
+body.is-admin .admin-only{display:inline-flex!important}
+body.is-admin .admin-only-block{display:block!important}
+.tabs{display:flex;padding:12px 20px 0;border-bottom:1px solid var(--border);background:var(--surface)}
+.tab{padding:9px 18px;font-size:0.88rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.section{display:none}
+.section.active{display:block}
+.stats{display:flex;gap:8px;padding:14px 20px;overflow-x:auto;scrollbar-width:none}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 16px;flex:1;min-width:100px;text-align:center}
+.stat-n{font-family:'IBM Plex Mono',monospace;font-size:1.25rem;font-weight:600;line-height:1}
+.stat-card p{font-size:0.7rem;color:var(--muted);margin-top:4px}
+.c-green{color:var(--green)}.c-red{color:var(--red)}.c-yellow{color:var(--yellow)}.c-blue{color:var(--blue)}.c-accent{color:var(--accent)}
+.search-area{display:flex;gap:8px;padding:10px 20px 12px;flex-wrap:wrap;align-items:center}
+.search-area input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:0.88rem;flex:1;min-width:160px;outline:none}
+.search-area input:focus{border-color:var(--accent)}
+.filters{display:flex;gap:5px;flex-wrap:wrap}
+.fbtn{background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:7px;font-family:'Sarabun',sans-serif;font-size:0.78rem;cursor:pointer;white-space:nowrap}
+.fbtn.active{border-color:var(--accent);color:var(--accent);background:rgba(108,99,255,0.1)}
+.table-wrap{padding:0 20px 16px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:560px}
+thead th{background:var(--surface2);padding:10px 12px;text-align:left;font-size:0.72rem;color:var(--muted);font-weight:600;letter-spacing:0.06em;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid rgba(42,42,61,0.6);transition:background 0.12s}
+tbody tr:hover{background:rgba(255,255,255,0.018)}
+tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
+.mono{font-family:'IBM Plex Mono',monospace}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:0.75rem;font-weight:600;white-space:nowrap}
+.b-paid{background:rgba(61,214,140,0.1);color:var(--green);border:1px solid rgba(61,214,140,0.22)}
+.b-late{background:rgba(255,209,102,0.1);color:var(--yellow);border:1px solid rgba(255,209,102,0.22)}
+.b-unpaid{background:rgba(255,107,107,0.1);color:var(--red);border:1px solid rgba(255,107,107,0.22)}
+.fine-pill{background:rgba(255,209,102,0.12);color:var(--yellow);font-size:0.7rem;padding:1px 6px;border-radius:8px;margin-left:3px;font-weight:600}
+.abtn{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:4px 10px;border-radius:6px;font-family:'Sarabun',sans-serif;font-size:0.77rem;cursor:pointer;white-space:nowrap}
+.abtn:hover{border-color:var(--accent);color:var(--accent)}
+.abtn.slip{color:var(--blue);border-color:rgba(78,205,196,0.3)}
+.abtn.record:hover{border-color:var(--green);color:var(--green)}
+.btn-row{display:flex;gap:4px;flex-wrap:wrap}
+.exp-add-form{margin:14px 20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;display:none}
+.exp-add-form h3{font-size:0.88rem;color:var(--accent);margin-bottom:12px}
+.exp-form-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.exp-form-row input{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:0.85rem;outline:none}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;max-width:460px;width:100%;position:relative;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:1rem;font-weight:700;margin-bottom:3px}
+.modal .sub{font-size:0.8rem;color:var(--muted);margin-bottom:18px}
+.mclose{position:absolute;top:14px;right:14px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center}
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:0.8rem;color:var(--muted);margin-bottom:5px}
+.fg input,.fg select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:0.88rem;outline:none}
+.fg input:focus,.fg select:focus{border-color:var(--accent)}
+.amt-box{background:var(--surface2);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.amt-box .lbl{font-size:0.8rem;color:var(--muted)}
+.amt-box .val{font-family:'IBM Plex Mono',monospace;font-size:1.05rem;font-weight:600;color:var(--green)}
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative}
+.upload-zone:hover{border-color:var(--accent);background:rgba(108,99,255,0.05)}
+.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.upload-zone .icon{font-size:1.8rem;margin-bottom:6px}
+.upload-zone p{font-size:0.82rem;color:var(--muted)}
+.slip-prev{margin-top:10px;border-radius:8px;overflow:hidden;display:none}
+.slip-prev img{width:100%;max-height:180px;object-fit:contain;background:var(--surface2)}
+.slip-prev.show{display:block}
+.mactions{display:flex;gap:8px;margin-top:18px}
+.btn-p{flex:1;background:var(--accent);color:white;border:none;padding:10px;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer}
+.btn-p:disabled{opacity:0.5;cursor:not-allowed}
+.btn-s{background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:10px 18px;border-radius:8px;font-family:'Sarabun',sans-serif;font-size:0.88rem;cursor:pointer}
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;z-index:90}
+.bottom-bar p{font-size:0.78rem;color:var(--muted)}
+.expbtn{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:7px;font-family:'Sarabun',sans-serif;font-size:0.8rem;cursor:pointer}
+.expbtn:hover{border-color:var(--green);color:var(--green)}
+.toast{position:fixed;bottom:62px;left:50%;transform:translateX(-50%);padding:9px 18px;border-radius:8px;font-size:0.85rem;font-weight:600;z-index:9999;opacity:0;transition:opacity 0.25s;pointer-events:none;white-space:nowrap;background:var(--green);color:#0c0c10}
+.toast.err{background:var(--red);color:white}
+.toast.show{opacity:1}
+#loadingScreen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9998;gap:14px}
+#loadingScreen p{color:var(--muted);font-size:0.88rem}
+.spinner{width:32px;height:32px;border:3px solid var(--surface2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<!-- LOADING -->
-<div id="loadingScreen">
-  <div class="spinner"></div>
-  <p>กำลังโหลด...</p>
-</div>
+<div id="loadingScreen"><div class="spinner"></div><p>กำลังโหลด...</p></div>
 
-<!-- SETUP SCREEN -->
-<div id="setupScreen" style="display:none;visibility:hidden">
-  <div class="setup-card">
-    <h1>🔗 เชื่อมต่อระบบ Real-time</h1>
-    <p class="desc">ต้องทำครั้งแรกครั้งเดียว หลังจากนั้นทุกคนในห้องจะเห็นข้อมูลเดียวกันแบบ real-time โดยไม่ต้องทำซ้ำอีก</p>
-
-    <div class="step-block">
-      <div class="step-title"><span class="step-num">1</span> สร้าง Google Sheet ใหม่</div>
-      <div class="step-body">
-        ไปที่ <code>sheets.new</code> → สร้าง Sheet ใหม่ → ตั้งชื่อตามใจชอบ
-      </div>
-    </div>
-
-    <div class="step-block">
-      <div class="step-title"><span class="step-num">2</span> เพิ่ม Apps Script</div>
-      <div class="step-body">
-        ใน Sheet → เมนู <code>Extensions</code> → <code>Apps Script</code><br>
-        ลบโค้ดเดิมทิ้ง แล้ววางโค้ดจากไฟล์ <code>Code.gs</code> ที่ได้รับ<br><br>
-        จากนั้นกด <code>Deploy</code> → <code>New deployment</code> → Type: <code>Web app</code><br>
-        → Execute as: <code>Me</code> → Who has access: <code>Anyone</code> → <code>Deploy</code>
-      </div>
-    </div>
-
-    <div class="step-block">
-      <div class="step-title"><span class="step-num">3</span> วาง URL ที่ได้</div>
-      <div class="step-body">
-        คัดลอก Web App URL ที่ได้ (ขึ้นต้นด้วย <code>https://script.google.com/macros/s/...</code>)<br>
-        แล้ววางด้านล่างนี้
-        <div class="url-input-wrap">
-          <input class="url-input" id="gsUrl" type="text" placeholder="https://script.google.com/macros/s/..." />
-          <button class="btn-connect" id="connectBtn" onclick="connectGS()">เชื่อมต่อ</button>
-        </div>
-        <div class="connect-error" id="connectError">❌ เชื่อมต่อไม่ได้ ตรวจสอบ URL แล้วลองใหม่</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MAIN APP (hidden until connected) -->
 <div id="mainApp" style="display:none">
+<div class="header">
+  <div class="header-row1">
+    <div><h1>💰 เงินห้อง Real-time</h1><div class="sub">50 บาท/สัปดาห์ • ปรับสาย 20 บาท</div></div>
+    <div class="sync-dot"><div class="dot" id="dot"></div><span id="syncLabel">เชื่อมต่อ...</span></div>
+  </div>
+  <div class="admin-bar">
+    <div id="adminBadge" class="admin-badge badge-view">👁 ดูได้อย่างเดียว</div>
+    <button class="btn-login" id="adminBtn" onclick="toggleAdmin()">🔑 แอดมิน</button>
+  </div>
+  <div class="round-row">
+    <label>รอบ:</label>
+    <select id="roundSel" onchange="switchRound()"></select>
+    <span class="admin-only" style="display:none;gap:6px;align-items:center">
+      <input type="text" id="newRoundInp" placeholder="ชื่อรอบใหม่..." />
+      <button class="btn-add" onclick="addRound()">+ เพิ่มรอบ</button>
+    </span>
+  </div>
+</div>
 
-  <!-- HEADER -->
-  <div class="header">
-    <div class="header-row1">
-      <div>
-        <h1>💰 เงินห้อง Real-time</h1>
-        <div class="sub">50 บาท/สัปดาห์ • ปรับสาย 20 บาท</div>
-      </div>
-      <div class="sync-dot" id="syncDot">
-        <div class="dot" id="dot"></div>
-        <span id="syncLabel">รอเชื่อมต่อ</span>
-      </div>
-    </div>
+<div class="tabs">
+  <div class="tab active" id="tab-pay" onclick="switchTab('pay')">📊 ตารางจ่ายเงิน</div>
+  <div class="tab" id="tab-exp" onclick="switchTab('exp')">💸 รายจ่ายห้อง</div>
+</div>
 
-    <div class="admin-bar">
-      <div id="adminBadge" class="admin-badge badge-view">👁 ดูได้อย่างเดียว</div>
-      <button class="btn-login" id="adminBtn" onclick="toggleAdmin()">🔑 แอดมิน</button>
-    </div>
-
-    <div class="round-row">
-      <label>รอบ:</label>
-      <select id="roundSel" onchange="switchRound()"></select>
-      <span class="admin-only" style="display:none;gap:6px;align-items:center">
-        <input type="text" id="newRoundInp" placeholder="ชื่อรอบใหม่..." />
-        <button class="btn-add" onclick="addRound()">+ เพิ่มรอบ</button>
-      </span>
+<div class="section active" id="sec-pay">
+  <div class="stats" id="statsBar"></div>
+  <div class="search-area">
+    <input type="text" id="searchInp" placeholder="🔍 ค้นหาชื่อ / รหัส..." oninput="renderTable()" />
+    <div class="filters">
+      <button class="fbtn active" onclick="setFilter('all',this)">ทั้งหมด</button>
+      <button class="fbtn" onclick="setFilter('paid',this)">✅ จ่ายแล้ว</button>
+      <button class="fbtn" onclick="setFilter('late',this)">⚠️ สาย</button>
+      <button class="fbtn" onclick="setFilter('unpaid',this)">❌ ยังไม่จ่าย</button>
     </div>
   </div>
-
-  <!-- TABS -->
-  <div class="tabs">
-    <div class="tab active" id="tab-pay" onclick="switchTab('pay')">📊 ตารางจ่ายเงิน</div>
-    <div class="tab" id="tab-exp" onclick="switchTab('exp')">💸 รายจ่ายห้อง</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>สถานะ</th><th>วันที่</th><th>ยอด</th><th>จัดการ</th></tr></thead>
+      <tbody id="tBody"></tbody>
+    </table>
   </div>
+</div>
 
-  <!-- SECTION: PAYMENT -->
-  <div class="section active" id="sec-pay">
-    <div class="stats" id="statsBar"></div>
-
-    <div class="search-area">
-      <input type="text" id="searchInp" placeholder="🔍 ค้นหาชื่อ / รหัส..." oninput="renderTable()" />
-      <div class="filters">
-        <button class="fbtn active" onclick="setFilter('all',this)">ทั้งหมด</button>
-        <button class="fbtn" onclick="setFilter('paid',this)">✅ จ่ายแล้ว</button>
-        <button class="fbtn" onclick="setFilter('late',this)">⚠️ สาย</button>
-        <button class="fbtn" onclick="setFilter('unpaid',this)">❌ ยังไม่จ่าย</button>
-      </div>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th><th>รหัส</th><th>ชื่อ-นามสกุล</th>
-            <th>สถานะ</th><th>วันที่</th><th>ยอด</th><th>จัดการ</th>
-          </tr>
-        </thead>
-        <tbody id="tBody"></tbody>
-      </table>
+<div class="section" id="sec-exp">
+  <div class="exp-add-form admin-only-block" id="expForm">
+    <h3>➕ บันทึกรายจ่ายใหม่</h3>
+    <div class="exp-form-row">
+      <input type="text" id="expTitle" placeholder="รายการ เช่น ค่ากระดาษ A4" style="flex:2;min-width:160px" />
+      <input type="number" id="expAmt" placeholder="จำนวน (บาท)" style="width:120px" />
+      <input type="date" id="expDate" style="width:130px" />
+      <button class="btn-add" onclick="addExpense()">💾 บันทึก</button>
     </div>
   </div>
-
-  <!-- SECTION: EXPENSES -->
-  <div class="section" id="sec-exp">
-    <div class="exp-add-form admin-only-block" style="display:none" id="expForm">
-      <h3>➕ บันทึกรายจ่ายใหม่</h3>
-      <div class="exp-form-row">
-        <input type="text" id="expTitle" placeholder="รายการ เช่น ค่ากระดาษ A4" style="flex:2;min-width:160px" />
-        <input type="number" id="expAmt" placeholder="จำนวน (บาท)" style="width:120px" />
-        <input type="date" id="expDate" style="width:130px" />
-        <button class="btn-add" onclick="addExpense()">💾 บันทึก</button>
-      </div>
-    </div>
-
-    <div class="table-wrap" style="margin-top:12px">
-      <h3 style="font-size:0.9rem;margin-bottom:10px;color:var(--muted)">📋 ประวัติการใช้จ่าย</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>วันที่</th><th>รายการ</th><th>จำนวนเงิน</th>
-            <th class="admin-only">ลบ</th>
-          </tr>
-        </thead>
-        <tbody id="expBody"></tbody>
-      </table>
-    </div>
+  <div class="table-wrap" style="margin-top:12px">
+    <h3 style="font-size:0.9rem;margin-bottom:10px;color:var(--muted)">📋 ประวัติการใช้จ่าย</h3>
+    <table>
+      <thead><tr><th>วันที่</th><th>รายการ</th><th>จำนวนเงิน</th><th class="admin-only">ลบ</th></tr></thead>
+      <tbody id="expBody"></tbody>
+    </table>
   </div>
+</div>
+</div>
 
-</div><!-- end mainApp -->
-
-<!-- BOTTOM BAR -->
 <div class="bottom-bar" id="bottomBar" style="display:none">
   <p id="barSummary">—</p>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
-    <button class="expbtn admin-only" style="display:none" onclick="openOldMoney()">🪙 เงินสะสมเก่า</button>
+    <button class="expbtn admin-only" style="display:none" onclick="openOldMoney()">🪙 เงินเก่า</button>
     <button class="expbtn" onclick="exportCSV()">📥 CSV</button>
     <button class="expbtn" onclick="exportTxt()">📋 สรุป</button>
   </div>
 </div>
 
-<!-- MODAL: บันทึกจ่าย -->
+<!-- MODAL: จ่ายเงิน -->
 <div class="overlay" id="payModal">
   <div class="modal">
     <button class="mclose" onclick="closeModal('payModal')">✕</button>
     <h2>บันทึกการจ่ายเงิน</h2>
     <p class="sub" id="payModalSub">—</p>
-
-    <div class="amt-box">
-      <span class="lbl">ยอดที่ต้องจ่าย</span>
-      <span class="val" id="amtDue">50 บาท</span>
-    </div>
-
+    <div class="amt-box"><span class="lbl">ยอดที่ต้องจ่าย</span><span class="val" id="amtDue">50 บาท</span></div>
     <div class="fg">
-      <label>สถานะการจ่าย</label>
+      <label>สถานะ</label>
       <select id="paySt" onchange="updateAmt()">
         <option value="paid">✅ จ่ายตรงเวลา — 50 บาท</option>
         <option value="late">⚠️ จ่ายสาย +ปรับ 20 บาท — รวม 70 บาท</option>
-        <option value="unpaid">❌ ล้างข้อมูล (ยังไม่จ่าย)</option>
+        <option value="unpaid">❌ ล้างข้อมูล</option>
       </select>
     </div>
-
-    <div class="fg">
-      <label>วันที่จ่าย</label>
-      <input type="date" id="payDt" />
-    </div>
-
+    <div class="fg"><label>วันที่จ่าย</label><input type="date" id="payDt" /></div>
     <div class="fg">
       <label>แนบสลิป</label>
       <div class="upload-zone">
         <input type="file" accept="image/*" onchange="previewSlip(event)" />
         <div class="icon">📎</div>
         <p>แตะเพื่อเลือกรูปสลิป</p>
-        <p style="font-size:0.72rem;margin-top:3px;color:var(--muted)">JPG, PNG, HEIC</p>
       </div>
-      <div class="slip-prev" id="slipPrev">
-        <img id="slipPrevImg" src="" alt="" />
-      </div>
+      <div class="slip-prev" id="slipPrev"><img id="slipPrevImg" src="" alt="" /></div>
     </div>
-
     <div class="mactions">
       <button class="btn-s" onclick="closeModal('payModal')">ยกเลิก</button>
       <button class="btn-p" id="saveBtn" onclick="savePay()">💾 บันทึก</button>
@@ -609,16 +235,13 @@ tbody td { padding: 10px 12px; font-size: 0.86rem; vertical-align: middle; }
   </div>
 </div>
 
-<!-- MODAL: เงินสะสมเก่า -->
+<!-- MODAL: เงินเก่า -->
 <div class="overlay" id="oldMoneyModal">
   <div class="modal" style="max-width:340px">
     <button class="mclose" onclick="closeModal('oldMoneyModal')">✕</button>
     <h2>🪙 เงินสะสมเก่า</h2>
-    <p class="sub">ยอดเงินคงเหลือก่อนเริ่มระบบนี้</p>
-    <div class="fg">
-      <label>จำนวน (บาท)</label>
-      <input type="number" id="oldMoneyInp" placeholder="เช่น 1500" />
-    </div>
+    <p class="sub">ยอดเงินคงเหลือก่อนเริ่มระบบ</p>
+    <div class="fg"><label>จำนวน (บาท)</label><input type="number" id="oldMoneyInp" placeholder="เช่น 1500" /></div>
     <div class="mactions">
       <button class="btn-s" onclick="closeModal('oldMoneyModal')">ยกเลิก</button>
       <button class="btn-p" onclick="saveOldMoney()">💾 บันทึก</button>
@@ -632,10 +255,7 @@ tbody td { padding: 10px 12px; font-size: 0.86rem; vertical-align: middle; }
     <button class="mclose" onclick="closeModal('loginModal')">✕</button>
     <h2>🔑 เข้าสู่ระบบแอดมิน</h2>
     <p class="sub">กรอกรหัสผ่านเพื่อแก้ไขข้อมูล</p>
-    <div class="fg">
-      <label>รหัสผ่าน</label>
-      <input type="password" id="loginPwInp" placeholder="รหัสผ่าน..." onkeydown="if(event.key==='Enter')doLogin()" />
-    </div>
+    <div class="fg"><label>รหัสผ่าน</label><input type="password" id="loginPw" placeholder="รหัสผ่าน..." onkeydown="if(event.key==='Enter')doLogin()" /></div>
     <div style="color:var(--red);font-size:0.8rem;margin-top:-8px;margin-bottom:10px;display:none" id="loginErr">❌ รหัสผ่านไม่ถูกต้อง</div>
     <div class="mactions">
       <button class="btn-s" onclick="closeModal('loginModal')">ยกเลิก</button>
@@ -647,162 +267,124 @@ tbody td { padding: 10px 12px; font-size: 0.86rem; vertical-align: middle; }
 <div class="toast" id="toast"></div>
 
 <script>
-// ================================================================
-//  CONFIG — Firebase Realtime Database
-// ================================================================
+// ── CONFIG ──
 const ADMIN_PASSWORD = 'CoolKoko';
-const FIREBASE_URL = 'https://m609-3c034-default-rtdb.asia-southeast1.firebasedatabase.app';
-const DB_PATH = '/roomdata.json';
-const LS_STATE_KEY = 'roomFB_cache';
-const POLL_INTERVAL = 8000; // sync ทุก 8 วินาที
+const FIREBASE_CONFIG = {
+  databaseURL: 'https://m609-3c034-default-rtdb.asia-southeast1.firebasedatabase.app'
+};
 
-// ================================================================
 const MEMBERS = [
-  {no:1, code:'38793', name:'นาย กฤตธร ทองอ่อน'},
-  {no:2, code:'38831', name:'นาย คิดคม ปะเมโท'},
-  {no:3, code:'38857', name:'นาย สุรัชกร สอนเอก'},
-  {no:4, code:'38923', name:'นาย ธีรวัฒน์ หนูมา'},
-  {no:5, code:'38951', name:'นาย เอกภิญโญ เขียวอ่อน'},
-  {no:6, code:'38974', name:'นาย ธนันดร ไชยรัมย์'},
-  {no:7, code:'38600', name:'นางสาว กัลย์ธิดา แก้วขวัญไกร'},
-  {no:8, code:'38689', name:'นางสาว พรรณกาญจน์ ค่าภาน'},
-  {no:9, code:'42136', name:'นางสาว ณัฐรดา อันทาน'},
-  {no:10, code:'38762', name:'นางสาว ณัฏฐณีชา จันทร์โนนม่วง'},
-  {no:11, code:'38805', name:'นางสาว จิราพัชร หรีกประโดน'},
-  {no:12, code:'38844', name:'นางสาว ชนิสรา วรรณสุทธิ์'},
-  {no:13, code:'38849', name:'นางสาว ทรรศยา เต็มรัมย์'},
-  {no:14, code:'38931', name:'นางสาว กัญญาณัฐ สายวิเศษ'},
-  {no:15, code:'38934', name:'นางสาว กุลณัฐดา สมศรี'},
-  {no:16, code:'38935', name:'นางสาว คุณัชชา น้อยพลี'},
-  {no:17, code:'38942', name:'นางสาว ธัญพิชชา หมอทอง'},
-  {no:18, code:'38952', name:'นางสาว ปริชาติ ปะโนรัมย์'},
-  {no:19, code:'38955', name:'นางสาว พาขวัญ ศรีวีระพันธ์'},
-  {no:20, code:'39015', name:'นาย เกียรติคุณ วิโรจน์รัตนกุล'},
-  {no:21, code:'39037', name:'นาย รัชชานนท์ คานศรี'},
-  {no:22, code:'39057', name:'นาย ณัฐดนัย กระเชิญรัมย์'},
-  {no:23, code:'41296', name:'นาย ยิ่งคุณ ยอดเครือ'},
-  {no:24, code:'41297', name:'นาย ธนพล วงษ์กะวัน'},
-  {no:25, code:'41298', name:'นาย ปุญญพัตน์ ธิมะดี'},
-  {no:26, code:'39424', name:'นางสาว กัญญาวีร์ เณรทักลางดอน'},
-  {no:27, code:'39003', name:'นางสาว มณีรัตน์ เจกรัมย์'},
-  {no:28, code:'41402', name:'นางสาว น้ำทิพย์ ช่างดี'},
-  {no:29, code:'39050', name:'นางสาว รุ่งณภา กสิกิจ'},
-  {no:30, code:'41299', name:'นางสาว สิรภัทร รัตนชู'},
-  {no:31, code:'41300', name:'นางสาว ณิชญ์ชญินทร์ จันทรสิงห์'},
-  {no:32, code:'41301', name:'นางสาว วรัทยา นิยมพลอย'},
-  {no:33, code:'41302', name:'นางสาว สิรีกาญจน์ อ่ารุงแคว้น'},
-  {no:34, code:'42120', name:'นางสาว บุณณดา นิทะรัมย์'},
-  {no:35, code:'41304', name:'นางสาว ภัทราวดี ไปดี'},
-  {no:36, code:'41305', name:'นางสาว เมธปิยา แซมรัมย์'},
-  {no:37, code:'41306', name:'นางสาว พรพิมล กิชะรัมย์'},
-  {no:38, code:'41307', name:'นางสาว โชติกา ลักขษร'},
+  {no:1,code:'38793',name:'นาย กฤตธร ทองอ่อน'},
+  {no:2,code:'38831',name:'นาย คิดคม ปะเมโท'},
+  {no:3,code:'38857',name:'นาย สุรัชกร สอนเอก'},
+  {no:4,code:'38923',name:'นาย ธีรวัฒน์ หนูมา'},
+  {no:5,code:'38951',name:'นาย เอกภิญโญ เขียวอ่อน'},
+  {no:6,code:'38974',name:'นาย ธนันดร ไชยรัมย์'},
+  {no:7,code:'38600',name:'นางสาว กัลย์ธิดา แก้วขวัญไกร'},
+  {no:8,code:'38689',name:'นางสาว พรรณกาญจน์ ค่าภาน'},
+  {no:9,code:'42136',name:'นางสาว ณัฐรดา อันทาน'},
+  {no:10,code:'38762',name:'นางสาว ณัฏฐณีชา จันทร์โนนม่วง'},
+  {no:11,code:'38805',name:'นางสาว จิราพัชร หรีกประโดน'},
+  {no:12,code:'38844',name:'นางสาว ชนิสรา วรรณสุทธิ์'},
+  {no:13,code:'38849',name:'นางสาว ทรรศยา เต็มรัมย์'},
+  {no:14,code:'38931',name:'นางสาว กัญญาณัฐ สายวิเศษ'},
+  {no:15,code:'38934',name:'นางสาว กุลณัฐดา สมศรี'},
+  {no:16,code:'38935',name:'นางสาว คุณัชชา น้อยพลี'},
+  {no:17,code:'38942',name:'นางสาว ธัญพิชชา หมอทอง'},
+  {no:18,code:'38952',name:'นางสาว ปริชาติ ปะโนรัมย์'},
+  {no:19,code:'38955',name:'นางสาว พาขวัญ ศรีวีระพันธ์'},
+  {no:20,code:'39015',name:'นาย เกียรติคุณ วิโรจน์รัตนกุล'},
+  {no:21,code:'39037',name:'นาย รัชชานนท์ คานศรี'},
+  {no:22,code:'39057',name:'นาย ณัฐดนัย กระเชิญรัมย์'},
+  {no:23,code:'41296',name:'นาย ยิ่งคุณ ยอดเครือ'},
+  {no:24,code:'41297',name:'นาย ธนพล วงษ์กะวัน'},
+  {no:25,code:'41298',name:'นาย ปุญญพัตน์ ธิมะดี'},
+  {no:26,code:'39424',name:'นางสาว กัญญาวีร์ เณรทักลางดอน'},
+  {no:27,code:'39003',name:'นางสาว มณีรัตน์ เจกรัมย์'},
+  {no:28,code:'41402',name:'นางสาว น้ำทิพย์ ช่างดี'},
+  {no:29,code:'39050',name:'นางสาว รุ่งณภา กสิกิจ'},
+  {no:30,code:'41299',name:'นางสาว สิรภัทร รัตนชู'},
+  {no:31,code:'41300',name:'นางสาว ณิชญ์ชญินทร์ จันทรสิงห์'},
+  {no:32,code:'41301',name:'นางสาว วรัทยา นิยมพลอย'},
+  {no:33,code:'41302',name:'นางสาว สิรีกาญจน์ อ่ารุงแคว้น'},
+  {no:34,code:'42120',name:'นางสาว บุณณดา นิทะรัมย์'},
+  {no:35,code:'41304',name:'นางสาว ภัทราวดี ไปดี'},
+  {no:36,code:'41305',name:'นางสาว เมธปิยา แซมรัมย์'},
+  {no:37,code:'41306',name:'นางสาว พรพิมล กิชะรัมย์'},
+  {no:38,code:'41307',name:'นางสาว โชติกา ลักขษร'},
 ];
 
-// ================================================================
-let state = { rounds:[{id:'r1',name:'สัปดาห์ที่ 1',payments:{}}], currentRound:'r1', oldMoney:0, expenses:[] };
-let isAdmin = false;
-let curFilter = 'all';
-let curTab = 'pay';
-let curCode = null;
-let slipData = null;
-let pollTimer = null;
-let isSaving = false;
+// ── STATE ──
+let state = {rounds:[{id:'r1',name:'สัปดาห์ที่ 1',payments:{}}],currentRound:'r1',oldMoney:0,expenses:[]};
+let isAdmin = false, curFilter = 'all', curCode = null, slipData = null, isSaving = false;
+let db, dbRef;
 
-// ── STARTUP ──
+// ── FIREBASE INIT ──
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('expDate').value = today();
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.database();
+    dbRef = db.ref('roomdata');
 
-  showLoading('กำลังโหลดข้อมูล...');
-  initApp();
+    setSyncStatus('syncing','กำลังเชื่อมต่อ...');
+
+    // Real-time listener — อัปเดตทันทีเมื่อข้อมูลเปลี่ยน
+    dbRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (data && data.rounds) {
+        state = data;
+        if (!state.expenses) state.expenses = [];
+      }
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      document.getElementById('bottomBar').style.display = 'flex';
+      setSyncStatus('synced','เชื่อมต่อแล้ว');
+      renderAll();
+    }, (error) => {
+      console.error(error);
+      setSyncStatus('error','เชื่อมต่อไม่ได้');
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      document.getElementById('bottomBar').style.display = 'flex';
+      renderAll();
+    });
+  } catch(e) {
+    console.error(e);
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('bottomBar').style.display = 'flex';
+    renderAll();
+  }
 });
 
-async function initApp() {
-  // โหลด cache ก่อน
-  try {
-    const cached = localStorage.getItem(LS_STATE_KEY);
-    if (cached) { state = JSON.parse(cached); renderAll(); }
-  } catch(e) {}
-
-  await pullData();
-  hideLoading();
-  document.getElementById('mainApp').style.display = 'block';
-  document.getElementById('bottomBar').style.display = 'flex';
-  renderAll(); // render อีกครั้งหลังแสดง UI
-  startPolling();
-}
-
-// ── FIREBASE REALTIME DATABASE ──
-async function pullData() {
-  setSyncStatus('syncing', 'กำลังซิงก์...');
-  try {
-    const res = await fetch(FIREBASE_URL + DB_PATH);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if (data && data.rounds) {
-      state = data;
-      if (!state.expenses) state.expenses = [];
-      localStorage.setItem(LS_STATE_KEY, JSON.stringify(state));
-      setSyncStatus('synced', 'อัปเดตแล้ว');
-      renderAll();
-      return true;
-    }
-    // ยังไม่มีข้อมูลใน Firebase แสดงรายชื่อจาก default state
-    renderAll();
-    setSyncStatus('synced', 'พร้อมใช้งาน');
-    return true;
-  } catch(e) {
-    setSyncStatus('error', 'ออฟไลน์ (ใช้ cache)');
-    return false;
-  }
-}
-
 async function pushData() {
-  if (isSaving) return;
+  if (!dbRef || isSaving) return;
   isSaving = true;
-  setSyncStatus('syncing', 'กำลังบันทึก...');
+  setSyncStatus('syncing','กำลังบันทึก...');
   document.getElementById('saveBtn').disabled = true;
   try {
-    const res = await fetch(FIREBASE_URL + DB_PATH, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(state)
-    });
-    if (res.ok) {
-      localStorage.setItem(LS_STATE_KEY, JSON.stringify(state));
-      setSyncStatus('synced', 'บันทึกแล้ว ✓');
-    } else {
-      throw new Error('HTTP ' + res.status);
-    }
+    await dbRef.set(state);
+    setSyncStatus('synced','บันทึกแล้ว ✓');
   } catch(e) {
-    setSyncStatus('error', 'บันทึกไม่ได้');
-    showToast('❌ บันทึกไม่สำเร็จ — ตรวจสอบเน็ต', true);
+    setSyncStatus('error','บันทึกไม่ได้');
+    showToast('❌ บันทึกไม่สำเร็จ',true);
   }
   isSaving = false;
   document.getElementById('saveBtn').disabled = false;
 }
 
-function startPolling() {
-  if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(async () => {
-    await pullData(); // renderAll ถูกเรียกใน pullData แล้ว
-  }, POLL_INTERVAL);
-}
-
-// ── SYNC STATUS ──
-function setSyncStatus(type, label) {
-  const dot = document.getElementById('dot');
-  const lbl = document.getElementById('syncLabel');
-  dot.className = 'dot ' + type;
-  lbl.textContent = label;
+function setSyncStatus(type,label) {
+  document.getElementById('dot').className = 'dot ' + type;
+  document.getElementById('syncLabel').textContent = label;
 }
 
 // ── TABS ──
 function switchTab(name) {
-  curTab = name;
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.getElementById(`tab-${name}`).classList.add('active');
-  document.getElementById(`sec-${name}`).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('sec-'+name).classList.add('active');
 }
 
 // ── ADMIN ──
@@ -814,19 +396,17 @@ function toggleAdmin() {
     document.getElementById('adminBadge').textContent = '👁 ดูได้อย่างเดียว';
     document.getElementById('adminBtn').textContent = '🔑 แอดมิน';
     renderAll();
-    showToast('ออกจากโหมดแอดมินแล้ว');
+    showToast('ออกจากโหมดแอดมิน');
   } else {
-    // เปิด modal แทน prompt()
-    document.getElementById('loginPwInp').value = '';
+    document.getElementById('loginPw').value = '';
     document.getElementById('loginErr').style.display = 'none';
     document.getElementById('loginModal').classList.add('open');
-    setTimeout(() => document.getElementById('loginPwInp').focus(), 100);
+    setTimeout(()=>document.getElementById('loginPw').focus(),100);
   }
 }
 
 function doLogin() {
-  const pw = document.getElementById('loginPwInp').value;
-  if (pw === ADMIN_PASSWORD) {
+  if (document.getElementById('loginPw').value === ADMIN_PASSWORD) {
     isAdmin = true;
     document.body.classList.add('is-admin');
     document.getElementById('adminBadge').className = 'admin-badge badge-admin';
@@ -837,8 +417,8 @@ function doLogin() {
     showToast('ยินดีต้อนรับแอดมิน! ⚡');
   } else {
     document.getElementById('loginErr').style.display = 'block';
-    document.getElementById('loginPwInp').value = '';
-    document.getElementById('loginPwInp').focus();
+    document.getElementById('loginPw').value = '';
+    document.getElementById('loginPw').focus();
   }
 }
 
@@ -846,14 +426,13 @@ function doLogin() {
 function addRound() {
   if (!isAdmin) return;
   const inp = document.getElementById('newRoundInp');
-  const name = inp.value.trim() || `สัปดาห์ที่ ${state.rounds.length + 1}`;
-  const id = 'r' + Date.now();
-  state.rounds.push({ id, name, payments: {} });
-  state.currentRound = id;
+  const name = inp.value.trim() || 'สัปดาห์ที่ '+(state.rounds.length+1);
+  state.rounds.push({id:'r'+Date.now(),name,payments:{}});
+  state.currentRound = state.rounds[state.rounds.length-1].id;
   inp.value = '';
   pushData();
   renderAll();
-  showToast(`เพิ่มรอบ "${name}" แล้ว`);
+  showToast('เพิ่มรอบ "'+name+'" แล้ว');
 }
 
 function switchRound() {
@@ -862,10 +441,10 @@ function switchRound() {
 }
 
 function curRound() {
-  return state.rounds.find(r => r.id === state.currentRound) || state.rounds[0];
+  return state.rounds.find(r=>r.id===state.currentRound)||state.rounds[0];
 }
 
-// ── RENDER ALL ──
+// ── RENDER ──
 function renderAll() {
   renderRoundSel();
   renderStats();
@@ -875,153 +454,102 @@ function renderAll() {
 
 function renderRoundSel() {
   const sel = document.getElementById('roundSel');
-  sel.innerHTML = state.rounds.map(r =>
-    `<option value="${r.id}" ${r.id === state.currentRound ? 'selected' : ''}>${r.name}</option>`
-  ).join('');
+  sel.innerHTML = state.rounds.map(r=>`<option value="${r.id}"${r.id===state.currentRound?' selected':''}>${r.name}</option>`).join('');
 }
 
-// ── STATS ──
 function renderStats() {
   const rd = curRound();
-  let paid = 0, late = 0, unpaid = 0;
-  MEMBERS.forEach(m => {
-    const p = rd.payments[m.code];
-    if (!p || p.status === 'unpaid') unpaid++;
-    else if (p.status === 'paid') paid++;
+  let paid=0,late=0,unpaid=0;
+  MEMBERS.forEach(m=>{
+    const p=rd.payments[m.code];
+    if(!p||p.status==='unpaid')unpaid++;
+    else if(p.status==='paid')paid++;
     else late++;
   });
-
-  let totalIncome = 0;
-  state.rounds.forEach(r => Object.values(r.payments).forEach(p => {
-    if (p.status === 'paid') totalIncome += 50;
-    if (p.status === 'late') totalIncome += 70;
+  let totalIncome=0;
+  state.rounds.forEach(r=>Object.values(r.payments||{}).forEach(p=>{
+    if(p.status==='paid')totalIncome+=50;
+    if(p.status==='late')totalIncome+=70;
   }));
-
-  const totalExp = (state.expenses || []).reduce((s, e) => s + Number(e.amount || 0), 0);
-  const net = (Number(state.oldMoney || 0)) + totalIncome - totalExp;
-
-  document.getElementById('statsBar').innerHTML = `
-    <div class="stat-card"><div class="stat-n c-accent">${paid+late}/${MEMBERS.length}</div><p>จ่ายแล้วรอบนี้</p></div>
+  const totalExp=(state.expenses||[]).reduce((s,e)=>s+Number(e.amount||0),0);
+  const net=Number(state.oldMoney||0)+totalIncome-totalExp;
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat-card"><div class="stat-n c-accent">${paid+late}/${MEMBERS.length}</div><p>จ่ายแล้ว</p></div>
     <div class="stat-card"><div class="stat-n c-green">฿${totalIncome}</div><p>รายรับรวม</p></div>
     <div class="stat-card"><div class="stat-n c-red">฿${totalExp}</div><p>รายจ่ายรวม</p></div>
-    <div class="stat-card" style="border-color:rgba(61,214,140,0.25)"><div class="stat-n c-green">฿${net}</div><p>💰 คงเหลือสุทธิ</p></div>
-    <div class="stat-card"><div class="stat-n c-red">${unpaid}</div><p>ยังไม่จ่าย</p></div>
-  `;
-  document.getElementById('barSummary').textContent =
-    `${rd.name} | จ่ายแล้ว ${paid+late}/${MEMBERS.length} | คงเหลือ ฿${net}`;
+    <div class="stat-card"><div class="stat-n c-green">฿${net}</div><p>💰 คงเหลือ</p></div>
+    <div class="stat-card"><div class="stat-n c-red">${unpaid}</div><p>ยังไม่จ่าย</p></div>`;
+  document.getElementById('barSummary').textContent=`${curRound().name} | จ่าย ${paid+late}/${MEMBERS.length} | คงเหลือ ฿${net}`;
 }
 
-// ── TABLE ──
-function setFilter(f, btn) {
-  curFilter = f;
-  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+function setFilter(f,btn) {
+  curFilter=f;
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderTable();
 }
 
 function renderTable() {
-  const rd = curRound();
-  const search = document.getElementById('searchInp').value.toLowerCase();
-
-  let rows = MEMBERS.map(m => {
-    const p = rd.payments[m.code];
-    return { ...m, pay: p, status: p ? p.status : 'unpaid' };
-  }).filter(r => {
-    if (search && !r.name.toLowerCase().includes(search) && !r.code.includes(search)) return false;
-    if (curFilter !== 'all' && r.status !== curFilter) return false;
+  const rd=curRound();
+  const search=document.getElementById('searchInp').value.toLowerCase();
+  let rows=MEMBERS.map(m=>{
+    const p=rd.payments[m.code];
+    return{...m,pay:p,status:p?p.status:'unpaid'};
+  }).filter(r=>{
+    if(search&&!r.name.toLowerCase().includes(search)&&!r.code.includes(search))return false;
+    if(curFilter!=='all'&&r.status!==curFilter)return false;
     return true;
   });
-
-  document.getElementById('tBody').innerHTML = rows.map(r => {
-    let badge, dateStr = '—', amtStr = '—';
-    if (r.status === 'paid') {
-      badge = '<span class="badge b-paid">✅ จ่ายแล้ว</span>';
-      dateStr = r.pay.date || '—'; amtStr = '50 บาท';
-    } else if (r.status === 'late') {
-      badge = '<span class="badge b-late">⚠️ จ่ายสาย</span>';
-      dateStr = r.pay.date || '—'; amtStr = `70 บาท <span class="fine-pill">+ปรับ 20</span>`;
-    } else {
-      badge = '<span class="badge b-unpaid">❌ ยังไม่จ่าย</span>';
-    }
-
-    const slipBtn = r.pay?.slip
-      ? `<button class="abtn slip" onclick='viewSlip("${r.code}")'>🖼 สลิป</button>` : '';
-
-    const editBtn = isAdmin
-      ? `<button class="abtn record" onclick='openPayModal("${r.code}")'>${r.pay && r.pay.status !== 'unpaid' ? '✏️ แก้ไข' : '+ บันทึก'}</button>`
-      : `<span style="font-size:0.72rem;color:var(--muted)">🔒</span>`;
-
-    return `<tr>
-      <td class="num-col mono">${r.no}</td>
-      <td class="mono" style="font-size:0.78rem;color:var(--muted)">${r.code}</td>
-      <td>${r.name}</td>
-      <td>${badge}</td>
-      <td style="font-size:0.8rem;color:var(--muted)">${dateStr}</td>
-      <td style="font-size:0.82rem">${amtStr}</td>
-      <td><div class="btn-row">${editBtn}${slipBtn}</div></td>
-    </tr>`;
+  document.getElementById('tBody').innerHTML=rows.map(r=>{
+    let badge,dateStr='—',amtStr='—';
+    if(r.status==='paid'){badge='<span class="badge b-paid">✅ จ่ายแล้ว</span>';dateStr=r.pay.date||'—';amtStr='50 บาท';}
+    else if(r.status==='late'){badge='<span class="badge b-late">⚠️ จ่ายสาย</span>';dateStr=r.pay.date||'—';amtStr=`70 บาท<span class="fine-pill">+ปรับ 20</span>`;}
+    else{badge='<span class="badge b-unpaid">❌ ยังไม่จ่าย</span>';}
+    const slipBtn=r.pay?.slip?`<button class="abtn slip" onclick='viewSlip("${r.code}")'>🖼 สลิป</button>`:'';
+    const editBtn=isAdmin?`<button class="abtn record" onclick='openPayModal("${r.code}")'>${r.pay&&r.pay.status!=='unpaid'?'✏️ แก้ไข':'+ บันทึก'}</button>`:`<span style="font-size:0.72rem;color:var(--muted)">🔒</span>`;
+    return`<tr><td class="mono" style="font-size:0.76rem;color:var(--muted)">${r.no}</td><td class="mono" style="font-size:0.78rem;color:var(--muted)">${r.code}</td><td>${r.name}</td><td>${badge}</td><td style="font-size:0.8rem;color:var(--muted)">${dateStr}</td><td style="font-size:0.82rem">${amtStr}</td><td><div class="btn-row">${editBtn}${slipBtn}</div></td></tr>`;
   }).join('');
 }
 
 // ── PAY MODAL ──
 function openPayModal(code) {
-  if (!isAdmin) return;
-  curCode = code; slipData = null;
-  const m = MEMBERS.find(x => x.code === code);
-  document.getElementById('payModalSub').textContent = `${m.no}. ${m.name} (${code})`;
-  document.getElementById('payDt').value = today();
-  document.getElementById('paySt').value = 'paid';
-  document.getElementById('amtDue').textContent = '50 บาท';
-
-  const rd = curRound();
-  const ex = rd.payments[code];
-  if (ex) {
-    document.getElementById('paySt').value = ex.status;
-    if (ex.date) document.getElementById('payDt').value = ex.date;
+  if(!isAdmin)return;
+  curCode=code;slipData=null;
+  const m=MEMBERS.find(x=>x.code===code);
+  document.getElementById('payModalSub').textContent=`${m.no}. ${m.name} (${code})`;
+  document.getElementById('payDt').value=today();
+  document.getElementById('paySt').value='paid';
+  document.getElementById('amtDue').textContent='50 บาท';
+  const rd=curRound();
+  const ex=rd.payments[code];
+  if(ex){
+    document.getElementById('paySt').value=ex.status;
+    if(ex.date)document.getElementById('payDt').value=ex.date;
     updateAmt();
-    if (ex.slip) {
-      slipData = ex.slip;
-      document.getElementById('slipPrevImg').src = ex.slip;
-      document.getElementById('slipPrev').classList.add('show');
-    } else { document.getElementById('slipPrev').classList.remove('show'); }
-  } else { document.getElementById('slipPrev').classList.remove('show'); }
+    if(ex.slip){slipData=ex.slip;document.getElementById('slipPrevImg').src=ex.slip;document.getElementById('slipPrev').classList.add('show');}
+    else document.getElementById('slipPrev').classList.remove('show');
+  } else document.getElementById('slipPrev').classList.remove('show');
   document.getElementById('payModal').classList.add('open');
 }
 
 function updateAmt() {
-  const v = document.getElementById('paySt').value;
-  document.getElementById('amtDue').textContent =
-    v === 'late' ? '70 บาท (50 + ปรับ 20)' : v === 'paid' ? '50 บาท' : '0 บาท';
+  const v=document.getElementById('paySt').value;
+  document.getElementById('amtDue').textContent=v==='late'?'70 บาท (50+ปรับ 20)':v==='paid'?'50 บาท':'0 บาท';
 }
 
 function previewSlip(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    slipData = ev.target.result;
-    document.getElementById('slipPrevImg').src = slipData;
-    document.getElementById('slipPrev').classList.add('show');
-  };
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{slipData=ev.target.result;document.getElementById('slipPrevImg').src=slipData;document.getElementById('slipPrev').classList.add('show');};
   reader.readAsDataURL(file);
 }
 
 async function savePay() {
-  if (!curCode) return;
-  const rd = curRound();
-  const st = document.getElementById('paySt').value;
-
-  if (st === 'unpaid') {
-    delete rd.payments[curCode];
-  } else {
-    rd.payments[curCode] = {
-      status: st,
-      date: document.getElementById('payDt').value,
-      slip: slipData || (rd.payments[curCode]?.slip) || null,
-      savedAt: new Date().toISOString()
-    };
-  }
-
+  if(!curCode)return;
+  const rd=curRound();
+  const st=document.getElementById('paySt').value;
+  if(st==='unpaid'){delete rd.payments[curCode];}
+  else{rd.payments[curCode]={status:st,date:document.getElementById('payDt').value,slip:slipData||(rd.payments[curCode]?.slip)||null,savedAt:new Date().toISOString()};}
   renderAll();
   closeModal('payModal');
   showToast('💾 กำลังบันทึก...');
@@ -1029,142 +557,77 @@ async function savePay() {
   showToast('บันทึกแล้ว ✓');
 }
 
-// ── SLIP VIEW ──
 function viewSlip(code) {
-  const m = MEMBERS.find(x => x.code === code);
-  const rd = curRound();
-  const p = rd.payments[code];
-  if (!p?.slip) return;
-  document.getElementById('slipName').textContent = m.name;
-  document.getElementById('slipImg').src = p.slip;
-  document.getElementById('slipDate').textContent = `วันที่จ่าย: ${p.date || '—'}`;
+  const m=MEMBERS.find(x=>x.code===code);
+  const rd=curRound();
+  const p=rd.payments[code];
+  if(!p?.slip)return;
+  document.getElementById('slipName').textContent=m.name;
+  document.getElementById('slipImg').src=p.slip;
+  document.getElementById('slipDate').textContent=`วันที่จ่าย: ${p.date||'—'}`;
   document.getElementById('slipModal').classList.add('open');
 }
 
-// ── OLD MONEY ──
-function openOldMoney() {
-  document.getElementById('oldMoneyInp').value = state.oldMoney || 0;
-  document.getElementById('oldMoneyModal').classList.add('open');
-}
-async function saveOldMoney() {
-  state.oldMoney = Number(document.getElementById('oldMoneyInp').value) || 0;
-  closeModal('oldMoneyModal');
-  renderStats();
-  await pushData();
-  showToast('อัปเดตเงินสะสมเก่าแล้ว ✓');
-}
+function openOldMoney(){document.getElementById('oldMoneyInp').value=state.oldMoney||0;document.getElementById('oldMoneyModal').classList.add('open');}
+async function saveOldMoney(){state.oldMoney=Number(document.getElementById('oldMoneyInp').value)||0;closeModal('oldMoneyModal');renderStats();await pushData();showToast('อัปเดตเงินเก่าแล้ว ✓');}
 
-// ── EXPENSES ──
 async function addExpense() {
-  if (!isAdmin) return;
-  const title = document.getElementById('expTitle').value.trim();
-  const amt = Number(document.getElementById('expAmt').value);
-  const dt = document.getElementById('expDate').value;
-  if (!title || !amt) { showToast('⚠️ กรอกชื่อรายการและจำนวนเงินด้วย', true); return; }
-  if (!state.expenses) state.expenses = [];
-  state.expenses.push({ id: 'e' + Date.now(), title, amount: amt, date: dt || today() });
-  document.getElementById('expTitle').value = '';
-  document.getElementById('expAmt').value = '';
-  renderAll();
-  await pushData();
-  showToast('บันทึกรายจ่ายแล้ว 💸');
+  if(!isAdmin)return;
+  const title=document.getElementById('expTitle').value.trim();
+  const amt=Number(document.getElementById('expAmt').value);
+  const dt=document.getElementById('expDate').value;
+  if(!title||!amt){showToast('⚠️ กรอกชื่อและจำนวนเงินด้วย',true);return;}
+  if(!state.expenses)state.expenses=[];
+  state.expenses.push({id:'e'+Date.now(),title,amount:amt,date:dt||today()});
+  document.getElementById('expTitle').value='';
+  document.getElementById('expAmt').value='';
+  renderAll();await pushData();showToast('บันทึกรายจ่ายแล้ว 💸');
 }
 
 async function deleteExpense(id) {
-  if (!isAdmin) return;
-  if (!confirm('ลบรายการนี้?')) return;
-  state.expenses = state.expenses.filter(e => e.id !== id);
-  renderAll();
-  await pushData();
-  showToast('ลบแล้ว');
+  if(!isAdmin||!confirm('ลบรายการนี้?'))return;
+  state.expenses=state.expenses.filter(e=>e.id!==id);
+  renderAll();await pushData();showToast('ลบแล้ว');
 }
 
 function renderExpenses() {
-  const tbody = document.getElementById('expBody');
-  const exps = state.expenses || [];
-  if (exps.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">ยังไม่มีรายจ่าย</td></tr>`;
-    return;
-  }
-  const sorted = [...exps].sort((a, b) => new Date(b.date) - new Date(a.date));
-  tbody.innerHTML = sorted.map(e => {
-    const del = isAdmin
-      ? `<td><button class="abtn" style="color:var(--red)" onclick="deleteExpense('${e.id}')">🗑</button></td>` : '';
-    return `<tr>
-      <td class="mono" style="font-size:0.8rem;color:var(--muted)">${e.date}</td>
-      <td>${e.title}</td>
-      <td style="color:var(--red);font-weight:600">- ฿${e.amount}</td>
-      ${del}
-    </tr>`;
+  const tbody=document.getElementById('expBody');
+  const exps=state.expenses||[];
+  if(!exps.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">ยังไม่มีรายจ่าย</td></tr>`;return;}
+  const sorted=[...exps].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  tbody.innerHTML=sorted.map(e=>{
+    const del=isAdmin?`<td><button class="abtn" style="color:var(--red)" onclick="deleteExpense('${e.id}')">🗑</button></td>`:'';
+    return`<tr><td class="mono" style="font-size:0.8rem;color:var(--muted)">${e.date}</td><td>${e.title}</td><td style="color:var(--red);font-weight:600">- ฿${e.amount}</td>${del}</tr>`;
   }).join('');
 }
 
-// ── EXPORT ──
 function exportCSV() {
-  const rd = curRound();
-  const rows = [['#','รหัส','ชื่อ','สถานะ','วันที่','ยอด','มีสลิป']];
-  MEMBERS.forEach(m => {
-    const p = rd.payments[m.code];
-    rows.push([m.no, m.code, m.name,
-      p ? (p.status === 'paid' ? 'จ่ายแล้ว' : 'จ่ายสาย') : 'ยังไม่จ่าย',
-      p?.date || '', p ? (p.status === 'late' ? 70 : 50) : 0, p?.slip ? 'มี' : 'ไม่มี']);
-  });
-  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-  dl(new Blob(['\uFEFF' + csv], {type:'text/csv'}), `เงินห้อง_${curRound().name}.csv`);
+  const rd=curRound();
+  const rows=[['#','รหัส','ชื่อ','สถานะ','วันที่','ยอด','มีสลิป']];
+  MEMBERS.forEach(m=>{const p=rd.payments[m.code];rows.push([m.no,m.code,m.name,p?(p.status==='paid'?'จ่ายแล้ว':'จ่ายสาย'):'ยังไม่จ่าย',p?.date||'',p?(p.status==='late'?70:50):0,p?.slip?'มี':'ไม่มี']);});
+  dl(new Blob(['\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n')],{type:'text/csv'}),`เงินห้อง_${curRound().name}.csv`);
 }
 
 function exportTxt() {
-  const rd = curRound();
-  let paid = [], late = [], unpaid = [];
-  MEMBERS.forEach(m => {
-    const p = rd.payments[m.code];
-    if (!p || p.status === 'unpaid') unpaid.push(m);
-    else if (p.status === 'paid') paid.push(m);
-    else late.push(m);
-  });
-  const totalIncome = (state.rounds || []).reduce((s, r) =>
-    s + Object.values(r.payments).reduce((ss, p) => ss + (p.status === 'paid' ? 50 : p.status === 'late' ? 70 : 0), 0), 0);
-  const totalExp = (state.expenses || []).reduce((s, e) => s + Number(e.amount || 0), 0);
-  const net = Number(state.oldMoney || 0) + totalIncome - totalExp;
-
-  let txt = `📊 สรุปเงินห้อง — ${rd.name}\n${'─'.repeat(40)}\n`;
-  txt += `✅ จ่ายแล้ว (${paid.length} คน):\n` + paid.map(m=>`  • ${m.name}`).join('\n') + '\n\n';
-  txt += `⚠️ จ่ายสาย (${late.length} คน):\n` + late.map(m=>`  • ${m.name}`).join('\n') + '\n\n';
-  txt += `❌ ยังไม่จ่าย (${unpaid.length} คน):\n` + unpaid.map(m=>`  • ${m.name}`).join('\n') + '\n\n';
-  txt += `${'─'.repeat(40)}\n`;
-  txt += `💰 รายรับรวมทุกสัปดาห์: ฿${totalIncome}\n`;
-  txt += `💸 รายจ่ายรวม: ฿${totalExp}\n`;
-  txt += `✨ เงินคงเหลือสุทธิ: ฿${net}\n`;
-  dl(new Blob([txt], {type:'text/plain'}), `สรุปเงินห้อง_${rd.name}.txt`);
+  const rd=curRound();
+  let paid=[],late=[],unpaid=[];
+  MEMBERS.forEach(m=>{const p=rd.payments[m.code];if(!p||p.status==='unpaid')unpaid.push(m);else if(p.status==='paid')paid.push(m);else late.push(m);});
+  let totalIncome=0;state.rounds.forEach(r=>Object.values(r.payments||{}).forEach(p=>{if(p.status==='paid')totalIncome+=50;if(p.status==='late')totalIncome+=70;}));
+  const totalExp=(state.expenses||[]).reduce((s,e)=>s+Number(e.amount||0),0);
+  const net=Number(state.oldMoney||0)+totalIncome-totalExp;
+  let txt=`📊 สรุปเงินห้อง — ${rd.name}\n${'─'.repeat(40)}\n`;
+  txt+=`✅ จ่ายแล้ว (${paid.length} คน):\n`+paid.map(m=>`  • ${m.name}`).join('\n')+'\n\n';
+  txt+=`⚠️ จ่ายสาย (${late.length} คน):\n`+late.map(m=>`  • ${m.name}`).join('\n')+'\n\n';
+  txt+=`❌ ยังไม่จ่าย (${unpaid.length} คน):\n`+unpaid.map(m=>`  • ${m.name}`).join('\n')+'\n\n';
+  txt+=`${'─'.repeat(40)}\n💰 รายรับรวม: ฿${totalIncome}\n💸 รายจ่ายรวม: ฿${totalExp}\n✨ คงเหลือสุทธิ: ฿${net}\n`;
+  dl(new Blob([txt],{type:'text/plain'}),`สรุปเงินห้อง_${rd.name}.txt`);
 }
 
-function dl(blob, name) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = name; a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ── HELPERS ──
-function today() { return new Date().toISOString().split('T')[0]; }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
+function dl(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
+function today(){return new Date().toISOString().split('T')[0];}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
 let toastTimer;
-function showToast(msg, err = false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast' + (err ? ' err' : '') + ' show';
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
-}
-
-function showLoading(msg) {
-  document.getElementById('loadingScreen').style.display = 'flex';
-  document.getElementById('loadingScreen').querySelector('p').textContent = msg;
-}
-function hideLoading() {
-  document.getElementById('loadingScreen').style.display = 'none';
-}
+function showToast(msg,err=false){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(err?' err':'')+' show';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);}
 </script>
 </body>
 </html>
