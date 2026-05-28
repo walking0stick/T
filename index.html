@@ -33,8 +33,9 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--text);min
 .btn-login:hover{border-color:var(--accent);color:var(--accent)}
 .round-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .round-row label{font-size:0.8rem;color:var(--muted)}
-.round-row select,.round-row input[type="text"]{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-family:'Sarabun',sans-serif;font-size:0.85rem;outline:none}
-.round-row input[type="text"]{width:140px}
+.round-row select,.round-row input[type="text"],.round-row input[type="number"]{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:7px;font-family:'Sarabun',sans-serif;font-size:0.85rem;outline:none}
+.round-row input[type="text"]{width:130px}
+.round-row input[type="number"]{width:75px}
 .btn-add{background:var(--accent);color:white;border:none;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:'Sarabun',sans-serif;font-size:0.82rem;font-weight:600}
 .btn-del-round{background:rgba(255,107,107,0.15);color:var(--red);border:1px solid rgba(255,107,107,0.3);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:0.82rem}
 .admin-only{display:none!important}
@@ -114,14 +115,14 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
 .spinner{width:32px;height:32px;border:3px solid var(--surface2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* สไตล์เพิ่มเติมสำหรับ "หน้าแรกแจ้งโอนเงิน" แบบคลีนๆ */
-.p1-card { max-w:420px; margin:24px auto; padding:0 16px; }
+.p1-card { max-width:420px; margin:24px auto; padding:0 16px; }
 .btn-primary-custom { background:var(--accent); color:white; border:none; width:100%; padding:12px; border-radius:10px; font-family:'Sarabun',sans-serif; font-size:0.92rem; font-weight:600; cursor:pointer; text-align:center; box-shadow:0 4px 12px rgba(108,99,255,0.2); transition:all 0.2s; }
 .btn-primary-custom:hover { opacity:0.9; }
 .btn-secondary-custom { background:var(--surface); border:1px solid var(--border); color:var(--text); width:100%; padding:12px; border-radius:10px; font-family:'Sarabun',sans-serif; font-size:0.9rem; font-weight:500; cursor:pointer; text-align:center; transition:all 0.2s; margin-top:12px; }
 .btn-secondary-custom:hover { border-color:var(--accent); color:var(--accent); }
 .custom-select-p1 { width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); padding:11px 14px; border-radius:10px; font-family:'Sarabun',sans-serif; font-size:0.9rem; outline:none; margin-bottom:14px; }
 .custom-select-p1:focus { border-color:var(--accent); }
+.p1-round-desc { font-size:0.8rem; color:var(--yellow); margin-top:-8px; margin-bottom:14px; display:block; text-align:right; font-weight:500; }
 </style>
 </head>
 <body>
@@ -131,7 +132,7 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
 <div id="welcomePage" style="display:none" class="p1-card">
   <div style="text-align:center; margin:32px 0 24px;">
      <h1 style="font-size:1.4rem; font-weight:700; color:var(--accent)">💰 ระบบส่งสลิปเงินห้อง ม.6/9</h1>
-     <p style="font-size:0.8rem; color:var(--muted); margin-top:4px">สัปดาห์ละ 50 บาท • ปรับสาย 20 บาท</p>
+     <p style="font-size:0.8rem; color:var(--muted); margin-top:4px">ตามรอบสัปดาห์ • ปรับสาย 20 บาท</p>
   </div>
 
   <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; text-align:center; margin-bottom:20px;">
@@ -143,12 +144,11 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
      <h3 style="font-size:0.92rem; margin-bottom:12px; color:var(--accent); font-weight:600">💸 แจ้งโอนเงินเข้าคลังห้อง</h3>
      
      <label style="display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px">1. เลือกชื่อ-นามสกุลของคุณ</label>
-     <select id="p1StudentSel" class="custom-select-p1">
-        </select>
+     <select id="p1StudentSel" class="custom-select-p1"></select>
 
      <label style="display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px">2. อัปเดตรอบสัปดาห์ที่ต้องการจ่าย</label>
-     <select id="p1RoundSel" class="custom-select-p1" onchange="syncRoundSelects(this.value)">
-        </select>
+     <select id="p1RoundSel" class="custom-select-p1" onchange="syncRoundSelects(this.value)"></select>
+     <span class="p1-round-desc" id="p1RoundDesc">ยอดเก็บรอบนี้: 50 บาท</span>
 
      <label style="display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px">3. แนบหลักฐานรูปภาพสลิป</label>
      <div class="upload-zone" style="margin-bottom:14px;">
@@ -164,13 +164,12 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
   <button class="btn-secondary-custom" onclick="navigateToPage(2)">📊 เข้าสู่ตารางบัญชีและรายชื่อทั้งหมด ➡️</button>
 </div>
 
-
 <div id="mainApp" style="display:none">
 <div class="header">
   <button onclick="navigateToPage(1)" style="background:var(--surface3); border:1px solid var(--border); color:var(--text); padding:4px 10px; border-radius:6px; font-size:0.75rem; cursor:pointer; margin-bottom:10px; font-family:'Sarabun';">⬅️ กลับไปหน้าส่งสลิป</button>
   
   <div class="header-row1">
-    <div><h1>💰 เงินห้อง Real-time (หน้ากระดานบัญชี)</h1><div class="sub">50 บาท/สัปดาห์ • ปรับสาย 20 บาท</div></div>
+    <div><h1>💰 เงินห้อง Real-time (หน้ากระดานบัญชี)</h1><div class="sub">ตามรอบสัปดาห์ • ปรับสาย 20 บาท</div></div>
     <div class="sync-dot"><div class="dot" id="dot"></div><span id="syncLabel">เชื่อมต่อ...</span></div>
   </div>
   <div class="admin-bar">
@@ -183,6 +182,7 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
     <button class="btn-del-round admin-only" style="display:none;" onclick="deleteCurrentRound()">🗑 ลบรอบนี้</button>
     <span class="admin-only" style="display:none;gap:6px;align-items:center;margin-left:auto;">
       <input type="text" id="newRoundInp" placeholder="ชื่อรอบใหม่..." />
+      <input type="number" id="newRoundAmt" placeholder="บาท" value="50" title="จำนวนเงินที่เก็บในรอบนี้" />
       <button class="btn-add" onclick="addRound()">+ เพิ่มรอบ</button>
     </span>
   </div>
@@ -250,10 +250,7 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
     <div class="fg">
       <label>สถานะ</label>
       <select id="paySt" onchange="updateAmt()">
-        <option value="paid">✅ จ่ายตรงเวลา — 50 บาท</option>
-        <option value="late">⚠️ จ่ายสาย +ปรับ 20 บาท — รวม 70 บาท</option>
-        <option value="unpaid">❌ ล้างข้อมูล / ยังไม่จ่าย</option>
-      </select>
+        </select>
     </div>
     <div class="fg"><label>วันที่จ่าย</label><input type="date" id="payDt" /></div>
     <div class="fg">
@@ -312,7 +309,6 @@ tbody td{padding:10px 12px;font-size:0.86rem;vertical-align:middle}
 <div class="toast" id="toast"></div>
 
 <script>
-// ── CONFIG ──
 const ADMIN_PASSWORD = 'CoolKoko';
 const FIREBASE_CONFIG = {
   databaseURL: 'https://m609-3c034-default-rtdb.asia-southeast1.firebasedatabase.app'
@@ -357,18 +353,17 @@ const MEMBERS = [
   {no:36,code:'41305',name:'นางสาว เมธปิยา แซมรัมย์'},
   {no:37,code:'41306',name:'นางสาว พรพิมล กิชะรัมย์'},
   {no:38,code:'41307',name:'นางสาว โชติกา ลักขษร'},
+  {no:39,code:'50000',name:'นาย ปอโต้'},
 ];
 
-// ── STATE ──
-let state = {rounds:[{id:'r1',name:'สัปดาห์ที่ 1',payments:{}}],currentRound:'r1',oldMoney:0,expenses:[]};
+let state = {rounds:[{id:'r1',name:'สัปดาห์ที่ 1',price:50,payments:{}}],currentRound:'r1',oldMoney:0,expenses:[]};
 let isAdmin = false, curFilter = 'all', curCode = null, slipData = null, isSaving = false;
 let db, dbRef;
-let p1SlipData = null; // ตัวแปรเก็บรูปสลิปของหน้าแรกฝั่งเพื่อน
+let p1SlipData = null;
 
-// ── FIREBASE INIT ──
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('expDate').value = today();
-  renderP1StaticSelects(); // เตรียมรายชื่อเพื่อนลงตัวเลือกของหน้าแรก
+  renderP1StaticSelects();
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.database();
@@ -378,21 +373,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
     dbRef.on('value', (snapshot) => {
       const data = snapshot.val();
-      if (data && data.rounds) {
+      if (data) {
         state = data;
         if (!state.expenses) state.expenses = [];
         if (!state.rounds || state.rounds.length === 0) {
-          state.rounds = [{id:'r1',name:'สัปดาห์ที่ 1',payments:{}}];
+          state.rounds = [{id:'r1',name:'สัปดาห์ที่ 1',price:50,payments:{}}];
         }
+        state.rounds.forEach(r => {
+          if(r.price === undefined) r.price = 50;
+        });
         if (!state.currentRound || !state.rounds.some(r=>r.id === state.currentRound)) {
           state.currentRound = state.rounds[0].id;
         }
       }
       document.getElementById('loadingScreen').style.display = 'none';
-      
-      // เริ่มต้นระบบ: ให้เปิดแสดงผลหน้าแรก (welcomePage) เสมอตามที่คุณตั้งใจ
       navigateToPage(1);
-      
       setSyncStatus('synced','เชื่อมต่อแล้ว');
       renderAll();
     }, (error) => {
@@ -410,7 +405,6 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ฟังก์ชันสลับเปลี่ยนหน้า (1 = หน้าแรกส่งสลิป, 2 = หน้าตารางบัญชีของคุณ)
 function navigateToPage(pageNum) {
   if(pageNum === 1) {
     document.getElementById('welcomePage').style.display = 'block';
@@ -423,7 +417,6 @@ function navigateToPage(pageNum) {
   }
 }
 
-// ผูกรอบหน้าแรกให้เลื่อนตามหน้าสอง
 function syncRoundSelects(val) {
   state.currentRound = val;
   document.getElementById('roundSel').value = val;
@@ -453,7 +446,6 @@ function setSyncStatus(type,label) {
   document.getElementById('syncLabel').textContent = label;
 }
 
-// ── TABS ──
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -461,7 +453,6 @@ function switchTab(name) {
   document.getElementById('sec-'+name).classList.add('active');
 }
 
-// ── ADMIN ──
 function toggleAdmin() {
   if (isAdmin) {
     isAdmin = false;
@@ -496,17 +487,23 @@ function doLogin() {
   }
 }
 
-// ── ROUNDS ──
 function addRound() {
   if (!isAdmin) return;
   const inp = document.getElementById('newRoundInp');
+  const amtInp = document.getElementById('newRoundAmt');
+  
   const name = inp.value.trim() || 'สัปดาห์ที่ '+(state.rounds.length+1);
-  state.rounds.push({id:'r'+Date.now(),name,payments:{}});
+  const price = Number(amtInp.value) || 50;
+
+  state.rounds.push({id:'r'+Date.now(),name,price,payments:{}});
   state.currentRound = state.rounds[state.rounds.length-1].id;
+  
   inp.value = '';
+  amtInp.value = '50';
+  
   pushData();
   renderAll();
-  showToast('เพิ่มรอบ "'+name+'" แล้ว');
+  showToast(`เพิ่มรอบ "${name}" (ยอดเก็บ ${price} บ.) แล้ว`);
 }
 
 function deleteCurrentRound() {
@@ -535,7 +532,6 @@ function curRound() {
   return state.rounds.find(r=>r.id===state.currentRound)||state.rounds[0];
 }
 
-// ── RENDER ──
 function renderAll() {
   renderRoundSel();
   renderStats();
@@ -551,11 +547,15 @@ function renderP1StaticSelects() {
 
 function renderRoundSel() {
   const sel = document.getElementById('roundSel');
-  sel.innerHTML = state.rounds.map(r=>`<option value="${r.id}"${r.id===state.currentRound?' selected':''}>${r.name}</option>`).join('');
+  if(sel) sel.innerHTML = state.rounds.map(r=>`<option value="${r.id}"${r.id===state.currentRound?' selected':''}>${r.name} (${r.price} บ.)</option>`).join('');
   
-  // อัปเดตรอบในเซเลกเตอร์ของหน้าแรกให้ตรงกันตลอดเวลา
   const p1Sel = document.getElementById('p1RoundSel');
-  p1Sel.innerHTML = state.rounds.map(r=>`<option value="${r.id}"${r.id===state.currentRound?' selected':''}>${r.name}</option>`).join('');
+  if(p1Sel) p1Sel.innerHTML = state.rounds.map(r=>`<option value="${r.id}"${r.id===state.currentRound?' selected':''}>${r.name}</option>`).join('');
+
+  const rd = curRound();
+  if(rd) {
+    document.getElementById('p1RoundDesc').textContent = `ยอดเก็บรอบนี้: ${rd.price} บาท`;
+  }
 }
 
 function renderStats() {
@@ -568,15 +568,19 @@ function renderStats() {
     else if(p.status==='paid')paid++;
     else late++;
   });
+  
   let totalIncome=0;
-  state.rounds.forEach(r=>Object.values(r.payments||{}).forEach(p=>{
-    if(p.status==='paid')totalIncome+=50;
-    if(p.status==='late')totalIncome+=70;
-  }));
+  state.rounds.forEach(r=>{
+    const price = r.price || 50;
+    Object.values(r.payments||{}).forEach(p=>{
+      if(p.status==='paid') totalIncome += price;
+      if(p.status==='late') totalIncome += (price + 20);
+    });
+  });
+  
   const totalExp=(state.expenses||[]).reduce((s,e)=>s+Number(e.amount||0),0);
   const net=Number(state.oldMoney||0)+totalIncome-totalExp;
   
-  // พ่นยอดเงินคงเหลือสุทธิไปแสดงผลที่ "การ์ดหน้าแรก"
   document.getElementById('p1NetDisplay').textContent = `฿${net.toLocaleString()}`;
 
   document.getElementById('statsBar').innerHTML=`
@@ -598,6 +602,7 @@ function setFilter(f,btn) {
 function renderTable() {
   const rd=curRound();
   if(!rd) return;
+  const basePrice = rd.price || 50;
   const search=document.getElementById('searchInp').value.toLowerCase().trim();
   let rows=MEMBERS.map(m=>{
     const p=rd.payments ? rd.payments[m.code] : null;
@@ -607,241 +612,294 @@ function renderTable() {
     if(curFilter!=='all'&&r.status!==curFilter)return false;
     return true;
   });
-  document.getElementById('tBody').innerHTML=rows.map(r=>{
-    let badge,dateStr='—',amtStr='—';
-    if(r.status==='paid'){badge='<span class="badge b-paid">✅ จ่ายแล้ว</span>';dateStr=r.pay.date||'—';amtStr='50 บาท';}
-    else if(r.status==='late'){badge='<span class="badge b-late">⚠️ จ่ายสาย</span>';dateStr=r.pay.date||'—';amtStr=`70 บาท<span class="fine-pill">+ปรับ 20</span>`;}
-    else{badge='<span class="badge b-unpaid">❌ ยังไม่จ่าย</span>';}
-    const slipBtn=r.pay?.slip?`<button class="abtn slip" onclick='viewSlip("${r.code}")'>🖼 สลิป</button>`:'';
-    const editBtn=isAdmin?`<button class="abtn record" onclick='openPayModal("${r.code}")'>${r.pay&&r.pay.status!=='unpaid'?'✏️ แก้ไข':'+ บันทึก'}</button>`:`<span style="font-size:0.72rem;color:var(--muted)">🔒</span>`;
-    return`<tr><td class="mono" style="font-size:0.76rem;color:var(--muted)">${r.no}</td><td class="mono" style="font-size:0.78rem;color:var(--muted)">${r.code}</td><td>${r.name}</td><td>${badge}</td><td style="font-size:0.8rem;color:var(--muted)">${dateStr}</td><td style="font-size:0.82rem">${amtStr}</td><td><div class="btn-row">${editBtn}${slipBtn}</div></td></tr>`;
-  }).join('');
+
+  let html='';
+  rows.forEach(r=>{
+    let stBadge='', dt='-', amt='-', btnText='✏️ บันทึก';
+    if(r.status==='paid'){
+      stBadge=`<span class="badge b-paid">จ่ายแล้ว</span>`;
+      dt=r.pay.date||'-'; amt=`฿${basePrice}`; btnText='⚙️ แก้ไข';
+    }else if(r.status==='late'){
+      stBadge=`<span class="badge b-late">สาย</span><span class="fine-pill">+20</span>`;
+      dt=r.pay.date||'-'; amt=`฿${basePrice + 20}`; btnText='⚙️ แก้ไข';
+    }else{
+      stBadge=`<span class="badge b-unpaid">ยังไม่จ่าย</span>`;
+    }
+
+    let slipBtn='';
+    if(r.pay && r.pay.slip){
+      slipBtn=`<button class="abtn slip" onclick="viewSlip('${r.code}')">🖼️ สลิป</button>`;
+    }
+
+    html+=`<tr>
+      <td class="mono">${r.no}</td>
+      <td class="mono">${r.code}</td>
+      <td><strong>${r.name}</strong></td>
+      <td>${stBadge}</td>
+      <td class="mono">${dt}</td>
+      <td class="mono">${amt}</td>
+      <td>
+        <div class="btn-row">
+          <button class="abtn record admin-only" onclick="openPayModal('${r.code}')">${btnText}</button>
+          ${slipBtn}
+        </div>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('tBody').innerHTML=html;
 }
 
-// ── PAY MODAL ──
+function renderExpenses() {
+  let html='';
+  const arr = state.expenses || [];
+  arr.forEach((e,idx)=>{
+    html+=`<tr>
+      <td class="mono">${e.date||'-'}</td>
+      <td>${e.title}</td>
+      <td class="mono c-red">฿${Number(e.amount).toLocaleString()}</td>
+      <td class="admin-only"><button class="abtn" style="color:var(--red)" onclick="deleteExpense(${idx})">🗑️</button></td>
+    </tr>`;
+  });
+  document.getElementById('expBody').innerHTML=html||'<tr><td colspan="4" style="text-align:center;color:var(--muted)">ไม่มีบันทึกรายจ่าย</td></tr>';
+}
+
 function openPayModal(code) {
-  if(!isAdmin)return;
-  curCode=code;slipData=null;
+  curCode=code;
   const m=MEMBERS.find(x=>x.code===code);
-  document.getElementById('payModalSub').textContent=`${m.no}. ${m.name} (${code})`;
-  document.getElementById('payDt').value=today();
-  document.getElementById('paySt').value='paid';
-  document.getElementById('amtDue').textContent='50 บาท';
   const rd=curRound();
-  if(!rd.payments) rd.payments = {};
-  const ex=rd.payments[code];
-  if(ex){
-    document.getElementById('paySt').value=ex.status;
-    if(ex.date)document.getElementById('payDt').value=ex.date;
-    updateAmt();
-    if(ex.slip){slipData=ex.slip;document.getElementById('slipPrevImg').src=ex.slip;document.getElementById('slipPrev').classList.add('show');}
-    else document.getElementById('slipPrev').classList.remove('show');
-  } else document.getElementById('slipPrev').classList.remove('show');
+  const p=rd.payments?rd.payments[code]:null;
+  const basePrice = rd.price || 50;
+  
+  document.getElementById('payModalSub').textContent=`${m.no}. ${m.name} (${m.code})`;
+  
+  const selectHtml = `
+    <option value="paid">✅ จ่ายตรงเวลา — ${basePrice} บาท</option>
+    <option value="late">⚠️ จ่ายสาย +ปรับ 20 บาท — รวม ${basePrice + 20} บาท</option>
+    <option value="unpaid">❌ ล้างข้อมูล / ยังไม่จ่าย</option>
+  `;
+  document.getElementById('paySt').innerHTML = selectHtml;
+  
+  document.getElementById('paySt').value=p?p.status:'unpaid';
+  document.getElementById('payDt').value=p?p.date:today();
+  
+  slipData = p?p.slip:null;
+  if(slipData){
+    document.getElementById('slipPrevImg').src=slipData;
+    document.getElementById('slipPrev').classList.add('show');
+  }else{
+    document.getElementById('slipPrev').classList.remove('show');
+  }
+  
+  updateAmt();
   document.getElementById('payModal').classList.add('open');
 }
 
 function updateAmt() {
-  const v=document.getElementById('paySt').value;
-  document.getElementById('amtDue').textContent=v==='late'?'70 บาท (50+ปรับ 20)':v==='paid'?'50 บาท':'0 บาท';
+  const st=document.getElementById('paySt').value;
+  const rd=curRound();
+  const basePrice = rd.price || 50;
+  let txt='0 บาท';
+  if(st==='paid') txt=`${basePrice} บาท`;
+  if(st==='late') txt=`${basePrice + 20} บาท`;
+  document.getElementById('amtDue').textContent=txt;
 }
 
 function previewSlip(e) {
-  const file=e.target.files[0];if(!file)return;
-  if(file.size > 1.5 * 1024 * 1024) {
-     showToast('⚠️ ภาพสลิปมีขนาดใหญ่เกินไป ลองแคปหน้าจอเพื่อลดขนาด', true);
-     return;
-  }
+  const file=e.target.files[0];
+  if(!file)return;
   const reader=new FileReader();
-  reader.onload=ev=>{
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 600;
-      const scale = MAX_WIDTH / img.width;
-      canvas.width = MAX_WIDTH;
-      canvas.height = img.height * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      slipData = canvas.toDataURL('image/jpeg', 0.65);
-      document.getElementById('slipPrevImg').src=slipData;
-      document.getElementById('slipPrev').classList.add('show');
-    };
-    img.src = ev.target.result;
+  reader.onload=function(evt){
+    slipData=evt.target.result;
+    document.getElementById('slipPrevImg').src=slipData;
+    document.getElementById('slipPrev').classList.add('show');
   };
   reader.readAsDataURL(file);
 }
 
-// ── ฟังก์ชันฝั่งหน้าแรก (เพื่อนอัปสลิปแบบ Auto-save) ──
 function previewSlipP1(e) {
-  const file = e.target.files[0]; if(!file) return;
-  document.getElementById('p1UploadLabel').innerText = "เลือกไฟล์แล้ว: " + file.name;
-  
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const MAX_WIDTH = 600;
-      const scale = MAX_WIDTH / img.width;
-      canvas.width = MAX_WIDTH;
-      canvas.height = img.height * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
-      p1SlipData = canvas.toDataURL('image/jpeg', 0.65); // เข้ารหัสภาพสลิปหน้านี้ลดภาระเซิร์ฟเวอร์
-      document.getElementById('p1SlipPrevImg').src = p1SlipData;
-      document.getElementById('p1SlipPrev').classList.add('show');
-    };
-    img.src = ev.target.result;
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(evt){
+    p1SlipData=evt.target.result;
+    document.getElementById('p1SlipPrevImg').src=p1SlipData;
+    document.getElementById('p1SlipPrev').classList.add('show');
+    document.getElementById('p1UploadLabel').textContent='เลือกรูปภาพเรียบร้อย ✓';
   };
   reader.readAsDataURL(file);
+}
+
+async function savePay() {
+  const rd=curRound();
+  if(!rd.payments)rd.payments={};
+  const st=document.getElementById('paySt').value;
+  
+  if(st==='unpaid'){
+    if(rd.payments[curCode]) delete rd.payments[curCode];
+  }else{
+    rd.payments[curCode]={
+      status:st,
+      date:document.getElementById('payDt').value||today(),
+      slip:slipData||null
+    };
+  }
+  closeModal('payModal');
+  await pushData();
+  renderAll();
+  showToast('บันทึกข้อมูลสำเร็จ');
 }
 
 async function submitSlipP1() {
   const code = document.getElementById('p1StudentSel').value;
-  const targetRoundId = document.getElementById('p1RoundSel').value;
-  const submitBtn = document.getElementById('p1SubmitBtn');
-
-  if(!code) { alert('กรุณาเลือกชื่อของคุณก่อนส่งด้วยครับ!'); return; }
-  if(!p1SlipData) { alert('กรุณาแนบรูปภาพสลิปหลักฐานเพื่อตรวจสอบด้วยครับ!'); return; }
-
-  submitBtn.disabled = true;
-  submitBtn.innerText = 'กำลังส่งข้อมูลเข้าฐานข้อมูล... ⏳';
-
-  try {
-    // ดึงก้อนข้อมูลรอบเป้าหมายที่เพื่อนเลือก
-    const rd = state.rounds.find(r => r.id === targetRoundId);
-    if(!rd) throw new Error('ไม่พบรอบสัปดาห์');
-    if(!rd.payments) rd.payments = {};
-
-    // ตรวจสอบสถานะการจ่ายเงิน ณ วันปัจจุบัน (ถ้าสายปรับเงินอัตโนมัติได้)
-    // ตรงนี้บันทึกให้เป็นสิทธิแบบ "จ่ายแล้ว (paid)" อัตโนมัติ เพื่อให้ยอดบวกรวมทันทีตามที่เพื่อนจ่ายจริง
-    rd.payments[code] = {
-      status: 'paid',
-      date: today(),
-      slip: p1SlipData,
-      savedAt: new Date().toISOString()
-    };
-
-    renderAll(); // อัปเดตตารางและยอดเงินรวมแบบ Real-time ทั่วทั้งแอป
-    
-    // เคลียร์ค่าที่ฟอร์มหน้าแรก
-    document.getElementById('p1StudentSel').value = '';
-    document.getElementById('p1SlipPrev').classList.remove('show');
-    document.getElementById('p1UploadLabel').innerText = "แตะเพื่ออัปโหลดไฟล์รูปภาพ";
-    p1SlipData = null;
-
-    alert('✅ ส่งหลักฐานและบันทึกข้อมูลเงินห้องเข้าระบบเรียบร้อยแล้วครับ ขอบคุณครับ!');
-    navigateToPage(2); // ส่งเสร็จเด้งพามาดูตารางรายชื่อรวมเพื่อเช็กความถูกต้องได้เลย
-  } catch(e) {
-    console.error(e);
-    alert('เกิดข้อผิดพลาดในการบันทึก กรุณาลองใหม่อีกครั้ง');
-  } finally {
-    submitBtn.disabled = false;
-    submitBtn.innerText = 'ส่งหลักฐานสลิปเข้าเน็ต ✨';
-    await pushData(); // ยิงคำสั่งเซฟลง Firebase Server ทันที
+  const roundId = document.getElementById('p1RoundSel').value;
+  
+  if(!code){
+    showToast('⚠️ กรุณาเลือกชื่อของคุณก่อนส่ง', true);
+    return;
   }
-}
+  if(!p1SlipData){
+    showToast('⚠️ กรุณาแนบรูปภาพสลิปเพื่อเป็นหลักฐาน', true);
+    return;
+  }
 
-async function savePay() {
-  if(!curCode)return;
-  const rd=curRound();
-  if(!rd.payments) rd.payments = {};
-  const st=document.getElementById('paySt').value;
-  if(st==='unpaid'){
-    if(rd.payments[curCode]) delete rd.payments[curCode];
-  }
-  else{
-    rd.payments[curCode]={status:st,date:document.getElementById('payDt').value,slip:slipData||(rd.payments[curCode]?.slip)||null,savedAt:new Date().toISOString()};
-  }
-  renderAll();
-  closeModal('payModal');
-  showToast('💾 กำลังบันทึก...');
+  const targetRound = state.rounds.find(r => r.id === roundId);
+  if(!targetRound) return;
+  if(!targetRound.payments) targetRound.payments = {};
+
+  targetRound.payments[code] = {
+    status: 'paid',
+    date: today(),
+    slip: p1SlipData
+  };
+
+  const btn = document.getElementById('p1SubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังส่งข้อมูล... ⏳';
+
   await pushData();
-  showToast('บันทึกแล้ว ✓');
+
+  showToast('🎉 ส่งสลิปเข้าคลังเงินห้องสำเร็จแล้ว!');
+  p1SlipData = null;
+  document.getElementById('p1SlipPrev').classList.remove('show');
+  document.getElementById('p1UploadLabel').textContent = 'แตะเพื่ออัปโหลดไฟล์รูปภาพ';
+  document.getElementById('p1StudentSel').value = '';
+  
+  btn.disabled = false;
+  btn.textContent = 'ส่งหลักฐานสลิปเข้าเน็ต ✨';
+  renderAll();
 }
 
 function viewSlip(code) {
   const m=MEMBERS.find(x=>x.code===code);
   const rd=curRound();
-  const p=rd.payments ? rd.payments[code] : null;
-  if(!p?.slip)return;
+  const p=rd.payments?rd.payments[code]:null;
+  if(!p||!p.slip)return;
+  
   document.getElementById('slipName').textContent=m.name;
   document.getElementById('slipImg').src=p.slip;
-  document.getElementById('slipDate').textContent=`วันที่จ่าย: ${p.date||'—'}`;
+  document.getElementById('slipDate').textContent=`โอนเมื่อวันที่: ${p.date||'-'}`;
   document.getElementById('slipModal').classList.add('open');
 }
 
-function openOldMoney(){document.getElementById('oldMoneyInp').value=state.oldMoney||0;document.getElementById('oldMoneyModal').classList.add('open');}
-async function saveOldMoney(){state.oldMoney=Number(document.getElementById('oldMoneyInp').value)||0;closeModal('oldMoneyModal');renderStats();await pushData();showToast('อัปเดตเงินเก่าแล้ว ✓');}
-
-async function addExpense() {
-  if(!isAdmin)return;
+function addExpense() {
   const title=document.getElementById('expTitle').value.trim();
   const amt=Number(document.getElementById('expAmt').value);
-  const dt=document.getElementById('expDate').value;
-  if(!title||!amt||isNaN(amt)){showToast('⚠️ กรอกชื่อและจำนวนเงินที่ถูกต้องด้วย',true);return;}
-  if(!state.expenses)state.expenses=[];
-  state.expenses.push({id:'e'+Date.now(),title,amount:amt,date:dt||today()});
+  const date=document.getElementById('expDate').value||today();
+  
+  if(!title||!amt){
+    showToast('⚠️ กรุณากรอกชื่อรายการและจำนวนเงิน',true);
+    return;
+  }
+  if(!state.expenses) state.expenses=[];
+  state.expenses.push({title,amount:amt,date});
+  
   document.getElementById('expTitle').value='';
   document.getElementById('expAmt').value='';
-  renderAll();await pushData();showToast('บันทึกรายจ่ายแล้ว 💸');
+  
+  pushData();
+  renderAll();
+  showToast('💾 บันทึกรายจ่ายสำเร็จ');
 }
 
-async function deleteExpense(id) {
-  if(!isAdmin||!confirm('ลบรายการนี้?'))return;
-  state.expenses=state.expenses.filter(e=>e.id!==id);
-  renderAll();await pushData();showToast('ลบแล้ว');
+function deleteExpense(idx) {
+  if(!isAdmin)return;
+  if(confirm('คุณต้องการลบรายจ่ายนี้ใช่หรือไม่?')){
+    state.expenses.splice(idx,1);
+    pushData();
+    renderAll();
+    showToast('ลบรายการจ่ายแล้ว');
+  }
 }
 
-function renderExpenses() {
-  const tbody=document.getElementById('expBody');
-  const exps=state.expenses||[];
-  if(!exps.length){tbody.innerHTML=`<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">ยังไม่มีรายจ่าย</td></tr>`;return;}
-  const sorted=[...exps].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  tbody.innerHTML=sorted.map(e=>{
-    const del=isAdmin?`<td><button class="abtn" style="color:var(--red)" onclick="deleteExpense('${e.id}')">🗑</button></td>`:'';
-    return`<tr><td class="mono" style="font-size:0.8rem;color:var(--muted)">${e.date}</td><td>${e.title}</td><td style="color:var(--red);font-weight:600">- ฿${e.amount}</td>${del}</tr>`;
-  }).join('');
+function openOldMoney() {
+  document.getElementById('oldMoneyInp').value=state.oldMoney||0;
+  document.getElementById('oldMoneyModal').classList.add('open');
+}
+
+function saveOldMoney() {
+  state.oldMoney=Number(document.getElementById('oldMoneyInp').value)||0;
+  closeModal('oldMoneyModal');
+  pushData();
+  renderAll();
+  showToast('อัปเดตเงินสะสมเก่าแล้ว');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function today() {
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function showToast(msg,isErr=false) {
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast'+(isErr?' err':'')+' show';
+  clearTimeout(window.tT);
+  window.tT=setTimeout(()=>t.classList.remove('show'),3000);
 }
 
 function exportCSV() {
   const rd=curRound();
-  if(!rd) return;
-  const rows=[['#','รหัส','ชื่อ','สถานะ','วันที่','ยอด','มีสลิป']];
+  const basePrice = rd.price || 50;
+  let csv='\uFEFF#,รหัส,ชื่อ-นามสกุล,สถานะ,วันที่,จำนวนเงิน\n';
   MEMBERS.forEach(m=>{
-    const p=rd.payments ? rd.payments[m.code] : null;
-    rows.push([m.no,m.code,m.name,p ? (p.status==='paid'?'จ่ายแล้ว':p.status==='late'?'จ่ายสาย':'ยังไม่จ่าย') :'ยังไม่จ่าย',p?.date||'',p?(p.status==='late'?70:p.status==='paid'?50:0):0,p?.slip?'มี':'ไม่มี']);
+    const p=rd.payments?rd.payments[m.code]:null;
+    let st='ยังไม่จ่าย',d='-',a='0';
+    if(p){
+      st=p.status==='paid'?'จ่ายแล้ว':'สาย';
+      d=p.date||'-';
+      a=p.status==='paid'?basePrice:(basePrice + 20);
+    }
+    csv+=`"${m.no}","${m.code}","${m.name}","${st}","${d}","${a}"\n`;
   });
-  dl(new Blob(['\uFEFF'+rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n')],{type:'text/csv'}),`เงินห้อง_${rd.name}.csv`);
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.setAttribute("download",`เงินห้อง_${rd.name}.csv`);
+  link.click();
 }
 
 function exportTxt() {
   const rd=curRound();
-  if(!rd) return;
-  let paid=[],late=[],unpaid=[];
+  let paid=[], unpaid=[];
   MEMBERS.forEach(m=>{
-    const p=rd.payments ? rd.payments[m.code] : null;
-    if(!p||p.status==='unpaid')unpaid.push(m);
-    else if(p.status==='paid')paid.push(m);
-    else late.push(m);
+    const p=rd.payments?rd.payments[m.code]:null;
+    if(p && p.status!=='unpaid') paid.push(`${m.no}. ${m.name}`);
+    else unpaid.push(`${m.no}. ${m.name}`);
   });
-  let totalIncome=0;state.rounds.forEach(r=>Object.values(r.payments||{}).forEach(p=>{if(p.status==='paid')totalIncome+=50;if(p.status==='late')totalIncome+=70;}));
-  const totalExp=(state.expenses||[]).reduce((s,e)=>s+Number(e.amount||0),0);
-  const net=Number(state.oldMoney||0)+totalIncome-totalExp;
-  let txt=`📊 สรุปเงินห้อง — ${rd.name}\n${'─'.repeat(40)}\n`;
-  txt+=`✅ จ่ายแล้ว (${paid.length} คน):\n`+(paid.length ? paid.map(m=>`  • ${m.name}`).join('\n') : '  - ไม่มี -')+'\n\n';
-  txt+=`⚠️ จ่ายสาย (${late.length} คน):\n`+(late.length ? late.map(m=>`  • ${m.name}`).join('\n') : '  - ไม่มี -')+'\n\n';
-  txt+=`❌ ยังไม่จ่าย (${unpaid.length} คน):\n`+(unpaid.length ? unpaid.map(m=>`  • ${m.name}`).join('\n') : '  - ไม่มี -')+'\n\n';
-  txt+=`${'─'.repeat(40)}\n💰 รายรับรวมทุกรอบ: ฿${totalIncome}\n💸 รายจ่ายรวม: ฿${totalExp}\n✨ คงเหลือสุทธิ: ฿${net}\n`;
-  dl(new Blob([txt],{type:'text/plain'}),`สรุปเงินห้อง_${rd.name}.txt`);
+  let txt=`📊 สรุปเงินห้อง [${rd.name}]\n`;
+  txt+=`✅ จ่ายแล้ว (${paid.length} คน):\n${paid.join('\n')}\n\n`;
+  txt+=`❌ ยังไม่จ่าย (${unpaid.length} คน):\n${unpaid.join('\n')}`;
+  
+  navigator.clipboard.writeText(txt).then(()=>{
+    showToast('📋 คัดลอกสรุปข้อความลงคลิปบอร์ดแล้ว!');
+  }).catch(()=>{
+    alert(txt);
+  });
 }
-
-function dl(blob,name){const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
-function today(){return new Date().toISOString().split('T')[0];}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-let toastTimer;
-function showToast(msg,err=false){const t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(err?' err':'')+' show';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600);}
 </script>
 </body>
 </html>
